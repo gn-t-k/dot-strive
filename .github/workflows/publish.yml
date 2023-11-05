@@ -10,8 +10,12 @@ jobs:
     runs-on: ubuntu-latest
     name: Publish
     steps:
-      - uses: actions/checkout@b4ffde65f46336ab88eb53be808477a3936bae11 # v4.1.1
-      - uses: oven-sh/setup-bun@a1800f471a0bc25cddac36bb13e6f436ddf341d7 # v1
+      - name: Checkout
+        uses: actions/checkout@b4ffde65f46336ab88eb53be808477a3936bae11 # v4.1.1
+      - name: Setup Bun
+        uses: oven-sh/setup-bun@a1800f471a0bc25cddac36bb13e6f436ddf341d7 # v1
+      - name: Build
+        run: bun run build  
       - name: Publish
         uses: cloudflare/wrangler-action@5e8484995321734668f14981c316aa9188d76ed1 # v3.3.2
         with:
