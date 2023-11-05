@@ -1,0 +1,15 @@
+{
+  "extends": [
+    "config:best-practices",
+    "automergeMinor",
+    "semanticCommitScopeDisabled",
+    "timezone(Asia/Tokyo)"
+  ],
+  "platformAutomerge": true,
+  "schedule": [
+    "after 5:00 before 18:00 every weekday"
+  ],
+  "ignorePaths": [
+    "**/node_modules/**"
+  ]
+}
