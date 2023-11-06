@@ -8,7 +8,8 @@
   ],
   "platformAutomerge": true,
   "schedule": [
-    "after 5:00 before 10:00"
+    "after 5:00",
+    "before 10:00"
   ],
   "ignorePaths": [
     "**/node_modules/**"
