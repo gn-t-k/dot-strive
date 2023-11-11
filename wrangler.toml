@@ -1,0 +1,5 @@
+[[d1_databases]]
+binding = "DB"
+database_name = "dot-strive"
+database_id = "b2428095-b300-45be-9fbe-6024a0e1f1af"
+migrations_dir = "./database/migrations"
