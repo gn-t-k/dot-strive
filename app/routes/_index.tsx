@@ -1,41 +1,36 @@
-import type { MetaFunction } from "@remix-run/cloudflare";
+import { json, LoaderFunctionArgs, type MetaFunction } from '@remix-run/cloudflare';
+import { useLoaderData } from '@remix-run/react';
+import { getDBClient } from 'database/client';
+import { trainees } from 'database/schema';
+
+export const loader = async ({ context }: LoaderFunctionArgs) => {
+  const db = getDBClient(context)
+  const result = await db.select().from(trainees).all()
+  
+  return json({
+    trainees: result
+  })
+}
 
 export const meta: MetaFunction = () => {
   return [
-    { title: "New Remix App" },
-    { name: "description", content: "Welcome to Remix!" },
+    { title: 'dot-strive' },
+    { name: 'description', content: 'training' },
   ];
 };
 
-export default function Index() {
+const Index = () => {
+  const data = useLoaderData<typeof loader>()
+
   return (
-    <div style={{ fontFamily: "system-ui, sans-serif", lineHeight: "1.8" }}>
-      <h1>Welcome to Remix</h1>
+    <main>
+      <h1>registered trainees</h1>
       <ul>
-        <li>
-          <a
-            target="_blank"
-            href="https://remix.run/tutorials/blog"
-            rel="noreferrer"
-          >
-            15m Quickstart Blog Tutorial
-          </a>
-        </li>
-        <li>
-          <a
-            target="_blank"
-            href="https://remix.run/tutorials/jokes"
-            rel="noreferrer"
-          >
-            Deep Dive Jokes App Tutorial
-          </a>
-        </li>
-        <li>
-          <a target="_blank" href="https://remix.run/docs" rel="noreferrer">
-            Remix Docs
-          </a>
-        </li>
+        {data.trainees.map((trainee) => (
+          <li key={trainee.id}>{trainee.name}</li>
+        ))}
       </ul>
-    </div>
+    </main>
   );
-}
+};
+export default Index;
