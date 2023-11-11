@@ -1,0 +1,59 @@
+{
+  "version": "5",
+  "dialect": "sqlite",
+  "id": "02679080-cfb7-402c-8540-f4eb070b278a",
+  "prevId": "00000000-0000-0000-0000-000000000000",
+  "tables": {
+    "trainees": {
+      "name": "trainees",
+      "columns": {
+        "id": {
+          "name": "id",
+          "type": "text",
+          "primaryKey": true,
+          "notNull": true,
+          "autoincrement": false
+        },
+        "name": {
+          "name": "name",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
+        },
+        "image": {
+          "name": "image",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
+        },
+        "authUserId": {
+          "name": "authUserId",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
+        }
+      },
+      "indexes": {
+        "trainees_authUserId_unique": {
+          "name": "trainees_authUserId_unique",
+          "columns": [
+            "authUserId"
+          ],
+          "isUnique": true
+        }
+      },
+      "foreignKeys": {},
+      "compositePrimaryKeys": {},
+      "uniqueConstraints": {}
+    }
+  },
+  "enums": {},
+  "_meta": {
+    "schemas": {},
+    "tables": {},
+    "columns": {}
+  }
+}
