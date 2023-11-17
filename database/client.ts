@@ -8,7 +8,7 @@ import type { DrizzleD1Database } from 'drizzle-orm/d1';
  */
 type GetDBClient = (context: AppLoadContext) => DrizzleD1Database;
 export const getDBClient: GetDBClient = (context) => {
-  const env = context['env'] as { DB: D1Database };
+  const env = context as { DB: D1Database };
   const client = drizzle(env.DB);
 
   return client;
