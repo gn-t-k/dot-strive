@@ -1,3 +1,8 @@
+[[kv_namespaces]]
+binding = "SESSION_KV"
+id = "c15c8297986a4bb7ad74f68a832c4074"
+preview_id = "2af224c7dacb4497bb4b01bd284614f5"
+
 [[d1_databases]]
 binding = "DB"
 database_name = "dot-strive"

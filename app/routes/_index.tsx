@@ -1,16 +1,21 @@
-import { json, LoaderFunctionArgs, type MetaFunction } from '@remix-run/cloudflare';
-import { useLoaderData } from '@remix-run/react';
-import { getDBClient } from 'database/client';
-import { trainees } from 'database/schema';
+import { json, redirect } from '@remix-run/cloudflare';
+import { Form, useLoaderData } from '@remix-run/react';
 
-export const loader = async ({ context }: LoaderFunctionArgs) => {
-  const db = getDBClient(context)
-  const result = await db.select().from(trainees).all()
-  
-  return json({
-    trainees: result
-  })
-}
+import { getAuthenticator } from 'app/services/auth.server';
+
+import type { MetaFunction , LoaderFunctionArgs } from '@remix-run/cloudflare';
+import type { FC } from 'react';
+
+export const loader = async ({ context, request }: LoaderFunctionArgs) => {
+  const authenticator = getAuthenticator(context);
+  const user = await authenticator.isAuthenticated(request);
+
+  if (!user) {
+    return redirect('/login');
+  }
+
+  return json({ user });
+};
 
 export const meta: MetaFunction = () => {
   return [
@@ -19,18 +24,16 @@ export const meta: MetaFunction = () => {
   ];
 };
 
-const Index = () => {
-  const data = useLoaderData<typeof loader>()
+const Page: FC = () => {
+  const { user } = useLoaderData<typeof loader>();
 
   return (
     <main>
-      <h1>registered trainees</h1>
-      <ul>
-        {data.trainees.map((trainee) => (
-          <li key={trainee.id}>{trainee.name}</li>
-        ))}
-      </ul>
+      <p>{JSON.stringify(user)}</p>
+      <Form method="POST" action="/auth/logout">
+        <button>logout</button>
+      </Form>
     </main>
   );
 };
-export default Index;
+export default Page;
