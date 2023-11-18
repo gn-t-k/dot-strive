@@ -1,14 +1,12 @@
 import { createId } from '@paralleldrive/cuid2';
 import { createCookie, createWorkersKVSessionStorage } from '@remix-run/cloudflare';
 import { eq } from 'drizzle-orm';
+import { drizzle } from 'drizzle-orm/d1';
 import { Authenticator } from 'remix-auth';
 import { GoogleStrategy } from 'remix-auth-google';
 import { object, string } from 'valibot';
 
-import { getDBClient } from 'database/client';
 import { trainees } from 'database/schema';
-
-import { getEnv } from './env.server';
 
 import type { AppLoadContext } from '@remix-run/cloudflare';
 import type { Input } from 'valibot';
@@ -21,18 +19,17 @@ export const getAuthenticator: GetAuthenticator = (context) => {
     return authenticator;
   }
 
-  const env = getEnv(context);
+  const env = context['env'] as Env;
 
   const cookie = createCookie('__session',{
-    secrets: [env('SESSION_SECRET')],
+    secrets: [env.SESSION_SECRET],
     path: '/',
     sameSite: 'lax',
     httpOnly: true,
     secure: process.env['NODE_ENV'] === 'production',
   });
-
   const sessionStorage = createWorkersKVSessionStorage({
-    kv: context['SESSION_KV'] as KVNamespace,
+    kv: env.SESSION_KV,
     cookie,
   });
 
@@ -40,12 +37,12 @@ export const getAuthenticator: GetAuthenticator = (context) => {
 
   const googleStrategy = new GoogleStrategy<AuthUser>(
     {
-      clientID: env('GOOGLE_CLIENT_ID'),
-      clientSecret: env('GOOGLE_CLIENT_SECRET'),
-      callbackURL: env('GOOGLE_CALLBACK_URL'),
+      clientID: env.GOOGLE_AUTH_CLIENT_ID,
+      clientSecret: env.GOOGLE_AUTH_CLIENT_SECRET,
+      callbackURL: env.GOOGLE_AUTH_CALLBACK_URL,
     },
     async (user) => {
-      const database = getDBClient(context);
+      const database = drizzle(env.DB);
 
       const [trainee] = await database
         .select()
@@ -78,7 +75,6 @@ export const getAuthenticator: GetAuthenticator = (context) => {
       };
     },
   );
-
   authenticator.use(googleStrategy);
 
   return authenticator;
