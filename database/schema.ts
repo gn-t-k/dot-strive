@@ -1,4 +1,4 @@
-import { primaryKey, sqliteTable, text, unique } from 'drizzle-orm/sqlite-core';
+import { integer, primaryKey, sqliteTable, text, unique } from 'drizzle-orm/sqlite-core';
 
 export const trainees = sqliteTable(
   'trainees',
@@ -7,9 +7,11 @@ export const trainees = sqliteTable(
     name: text('name').notNull(),
     image: text('image').notNull(),
     authUserId: text('authUserId').notNull(),
+    createdAt: integer('createdAt', { mode: 'timestamp' }).notNull(),
+    updatedAt: integer('updatedAt', { mode: 'timestamp' }).notNull()
   },
   (columns) => ({
-    pk: primaryKey(columns.id),
+    pk: primaryKey({ columns: [columns.id]}),
     uk: unique().on(columns.authUserId),
   }),
 );

@@ -8,7 +8,10 @@
     "dev": "remix dev --manual -c \"npm run start\"",
     "start": "wrangler pages dev --compatibility-date=2023-06-21 ./public",
     "typecheck": "tsc",
-    "pages:deploy": "bun run build && wrangler pages deploy ./public"
+    "pages:deploy": "bun run build && wrangler pages deploy ./public",
+    "migrations:gen": "drizzle-kit generate:sqlite --config=./database/drizzle.config.ts",
+    "migrations:apply": "wrangler d1 migrations apply dot-strive --local",
+    "production:migrations:apply": "NO_D1_WARNING=true wrangler d1 migrations apply dot-strive"
   },
   "dependencies": {
     "@paralleldrive/cuid2": "2.2.2",
@@ -16,7 +19,7 @@
     "@remix-run/cloudflare-pages": "2.3.0",
     "@remix-run/css-bundle": "2.3.0",
     "@remix-run/react": "2.3.0",
-    "drizzle-orm": "^0.29.0",
+    "drizzle-orm": "0.29.0",
     "isbot": "3.7.1",
     "react": "18.2.0",
     "react-dom": "18.2.0",
