@@ -6,7 +6,7 @@ import { Authenticator } from 'remix-auth';
 import { GoogleStrategy } from 'remix-auth-google';
 import { object, string } from 'valibot';
 
-import { trainees } from 'database/schema';
+import { trainees } from 'database/schemas/trainees';
 
 import type { AppLoadContext } from '@remix-run/cloudflare';
 import type { Input } from 'valibot';

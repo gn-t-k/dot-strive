@@ -1,4 +1,6 @@
+import { relations } from 'drizzle-orm';
 import { integer, primaryKey, sqliteTable, text, unique } from 'drizzle-orm/sqlite-core';
+import { muscles } from './muscles';
 
 export const trainees = sqliteTable(
   'trainees',
@@ -15,3 +17,10 @@ export const trainees = sqliteTable(
     uk: unique().on(columns.authUserId),
   }),
 );
+
+export const traineesRelations = relations(
+  trainees,
+  ({many}) => ({
+    muscles: many(muscles)
+  })
+)
