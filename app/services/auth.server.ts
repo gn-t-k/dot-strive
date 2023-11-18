@@ -64,6 +64,8 @@ export const getAuthenticator: GetAuthenticator = (context) => {
           name: user.profile.displayName,
           image: user.profile.photos[0].value,
           authUserId: user.profile.id,
+          createdAt: new Date(),
+          updatedAt: new Date(),
         })
         .returning()
         .get();

@@ -1,7 +1,7 @@
 {
   "version": "5",
   "dialect": "sqlite",
-  "id": "02679080-cfb7-402c-8540-f4eb070b278a",
+  "id": "4d55bc4e-8dae-47e4-aaea-8284584a7a55",
   "prevId": "00000000-0000-0000-0000-000000000000",
   "tables": {
     "trainees": {
@@ -31,6 +31,20 @@
         "authUserId": {
           "name": "authUserId",
           "type": "text",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
+        },
+        "createdAt": {
+          "name": "createdAt",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
+        },
+        "updatedAt": {
+          "name": "updatedAt",
+          "type": "integer",
           "primaryKey": false,
           "notNull": true,
           "autoincrement": false
