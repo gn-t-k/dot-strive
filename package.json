@@ -10,6 +10,7 @@
     "typecheck": "tsc",
     "pages:deploy": "bun run build && wrangler pages deploy ./public",
     "migrations:gen": "drizzle-kit generate:sqlite --config=./database/drizzle.config.ts",
+    "migrations:drop": "drizzle-kit drop --config=./database/drizzle.config.ts",
     "migrations:apply": "wrangler d1 migrations apply dot-strive --local",
     "production:migrations:apply": "NO_D1_WARNING=true wrangler d1 migrations apply dot-strive"
   },
