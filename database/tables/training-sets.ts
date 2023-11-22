@@ -1,6 +1,7 @@
-import { foreignKey, index, integer, primaryKey, real, sqliteTable, text } from "drizzle-orm/sqlite-core";
-import { trainingRecords } from "./training-records";
-import { relations } from "drizzle-orm";
+import { relations } from 'drizzle-orm';
+import { foreignKey, index, integer, primaryKey, real, sqliteTable, text } from 'drizzle-orm/sqlite-core';
+
+import { trainingRecords } from './training-records';
 
 export const trainingSets = sqliteTable(
   'training_sets',
@@ -18,12 +19,12 @@ export const trainingSets = sqliteTable(
     fk: foreignKey({ columns: [columns.recordId], foreignColumns: [trainingRecords.id] }),
     idx1: index('record_index').on(columns.recordId),
     idx2: index('estimated_maximum_weight_index').on(columns.estimatedMaximumWeight),
-  })
-)
+  }),
+);
 
 export const trainingSetsRelations = relations(
   trainingSets,
   ({ one }) => ({
-    trainingRecords: one(trainingRecords)
-  })
-)
+    trainingRecords: one(trainingRecords),
+  }),
+);

@@ -1,6 +1,6 @@
 import { redirect } from '@remix-run/cloudflare';
 
-import { getAuthenticator } from 'app/services/auth.server';
+import { getAuthenticator } from 'app/features/auth/get-authenticator.server';
 
 import type { ActionFunctionArgs } from '@remix-run/cloudflare';
 

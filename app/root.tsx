@@ -8,9 +8,13 @@ import {
   ScrollRestoration,
 } from '@remix-run/react';
 
+import styles from './globals.css';
+import { Container } from './ui/container';
+
 import type { LinksFunction } from '@remix-run/cloudflare';
 
 export const links: LinksFunction = () => [
+  { rel: 'stylesheet', href: styles },
   ...(cssBundleHref ? [{ rel: 'stylesheet', href: cssBundleHref }] : []),
 ];
 
@@ -26,7 +30,9 @@ const App = () => {
         <Links />
       </head>
       <body>
-        <Outlet />
+        <Container>
+          <Outlet />
+        </Container>
         <ScrollRestoration />
         <Scripts />
         <LiveReload />
