@@ -5,15 +5,8 @@
     {
       "idx": 0,
       "version": "5",
-      "when": 1700292431478,
-      "tag": "0000_lumpy_vulcan",
-      "breakpoints": true
-    },
-    {
-      "idx": 1,
-      "version": "5",
-      "when": 1700469855861,
-      "tag": "0001_smiling_nebula",
+      "when": 1700728267074,
+      "tag": "0000_conscious_centennial",
       "breakpoints": true
     }
   ]
