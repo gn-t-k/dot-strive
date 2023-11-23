@@ -1,4 +1,4 @@
-import { getAuthenticator } from 'app/services/auth.server';
+import { getAuthenticator } from 'app/features/auth/get-authenticator.server';
 
 import type { LoaderFunction } from '@remix-run/cloudflare';
 

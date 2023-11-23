@@ -1,6 +1,6 @@
 import type { Config } from 'drizzle-kit';
 
 export default {
-  schema: './database/schema.ts',
+  schema: './database/tables/*',
   out: './database/migrations',
 } satisfies Config;

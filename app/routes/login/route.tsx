@@ -1,7 +1,8 @@
 import { json, redirect } from '@remix-run/cloudflare';
 import { Form } from '@remix-run/react';
 
-import { getAuthenticator } from 'app/services/auth.server';
+import { getAuthenticator } from 'app/features/auth/get-authenticator.server';
+import { Button } from 'app/ui/button';
 
 import type { LoaderFunctionArgs } from '@remix-run/cloudflare';
 import type { FC } from 'react';
@@ -16,7 +17,7 @@ export const loader = async ({ request, context }: LoaderFunctionArgs) => {
 const Page: FC = () => {
   return (
     <Form method="POST" action="/auth/google">
-      <button>login with google</button>
+      <Button>login with google</Button>
     </Form>
   );
 };

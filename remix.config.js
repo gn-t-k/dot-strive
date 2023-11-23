@@ -12,4 +12,6 @@ export default {
   // appDirectory: "app",
   // assetsBuildDirectory: "public/build",
   // publicPath: "/build/",
+  tailwind: true,
+  postcss: true,
 };
