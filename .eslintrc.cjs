@@ -13,6 +13,7 @@ module.exports = {
     'plugin:testing-library/react',
     '@remix-run/eslint-config',
     '@remix-run/eslint-config/node',
+    'plugin:tailwindcss/recommended',
   ],
   parserOptions: {
     project: './tsconfig.json',
