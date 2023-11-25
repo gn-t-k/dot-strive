@@ -26,6 +26,7 @@ export const getAuthenticator: GetAuthenticator = (context) => {
     path: '/',
     sameSite: 'lax',
     httpOnly: true,
+    maxAge: 60 * 60 * 24 * 30, // 30 days
     secure: process.env['NODE_ENV'] === 'production',
   });
   const sessionStorage = createWorkersKVSessionStorage({
