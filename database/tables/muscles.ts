@@ -17,7 +17,7 @@ export const muscles = sqliteTable(
     pk: primaryKey({ columns: [columns.id] }),
     uk: unique().on(columns.traineeId, columns.name),
     fk: foreignKey({ columns: [columns.traineeId], foreignColumns: [trainees.id] }),
-    idx: index('trainee_index').on(columns.traineeId),
+    idx: index('muscles_trainee_index').on(columns.traineeId),
   }),
 );
 
