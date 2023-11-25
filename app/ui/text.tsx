@@ -6,34 +6,36 @@ import { cn } from 'app/libs/shadcn/utils';
 import type { VariantProps } from 'class-variance-authority';
 import type { DetailedHTMLProps, HTMLAttributes } from 'react';
 
-const paragraphVariants = cva(
+const textVariants = cva(
   '',
   {
     variants: {
-      variant: {},
-      size: {},
+      variant: {
+        body: 'text-base font-light',
+        annotation: 'text-xs font-light',
+        title: 'text-base font-extrabold',
+      },
     },
     defaultVariants: {
-      // variant: 'default',
-      // size: 'default',
+      variant: 'body',
     },
   },
 );
 
 type Props =
-  VariantProps<typeof paragraphVariants>
+  & VariantProps<typeof textVariants>
   & DetailedHTMLProps<HTMLAttributes<HTMLParagraphElement>, HTMLParagraphElement>;
 
-export const P = forwardRef<HTMLParagraphElement, Props>(
-  ({ className, variant, size, ...props }, ref) => {
+export const Text = forwardRef<HTMLParagraphElement, Props>(
+  ({ className, variant, ...props }, ref) => {
 
     return (
       <p
         ref={ref}
-        className={cn(paragraphVariants({ variant, size, className }))}
+        className={cn(textVariants({ variant, className }))}
         {...props}
       />
     );
   },
 );
-P.displayName = 'P';
+Text.displayName = 'P';

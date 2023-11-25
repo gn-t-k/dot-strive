@@ -35,10 +35,12 @@ const Page: FC = () => {
 
   return (
     <main>
-      <TraineeInfo trainee={trainee} />
-      <Form method="POST" action="/auth/logout">
-        <Button>logout</Button>
-      </Form>
+      <section className="mt-4 inline-flex w-full flex-col items-center justify-start gap-4">
+        <TraineeInfo trainee={trainee} />
+        <Form method="POST" action="/auth/logout">
+          <Button>logout</Button>
+        </Form>
+      </section>
     </main>
   );
 };
