@@ -12,5 +12,5 @@ export const loader = async ({ context, request }: LoaderFunctionArgs) => {
     return redirect('/login');
   }
 
-  return redirect (`/trainees/${trainee.id}`);
+  return redirect (`/trainees/${trainee.id}/trainings`);
 };

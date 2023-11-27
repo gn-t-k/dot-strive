@@ -1,5 +1,6 @@
+import { Annotation } from 'app/ui/annotation';
 import { Avatar, AvatarFallback, AvatarImage } from 'app/ui/avatar';
-import { Text } from 'app/ui/text';
+import { H2 } from 'app/ui/h2';
 
 import type { Trainee } from 'app/features/trainee';
 import type { FC } from 'react';
@@ -16,9 +17,8 @@ export const TraineeInfo: FC<Props> = ({
         <AvatarImage src={trainee.image} alt={trainee.name} />
         <AvatarFallback>{trainee.name}</AvatarFallback>
       </Avatar>
-      {/* TODO: H2としてマークアップしたい */}
-      <Text variant="title">{trainee.name}</Text>
-      <Text variant="annotation">id: {trainee.id}</Text>
+      <H2>{trainee.name}</H2>
+      <Annotation>id: {trainee.id}</Annotation>
     </div>
   );
 };
