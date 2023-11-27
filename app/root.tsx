@@ -9,7 +9,6 @@ import {
 } from '@remix-run/react';
 
 import styles from './globals.css';
-import { Container } from './ui/container';
 
 import type { LinksFunction } from '@remix-run/cloudflare';
 
@@ -30,9 +29,10 @@ const App = () => {
         <Links />
       </head>
       <body>
-        <Container>
+        <div className="mx-auto max-w-sm">
+          {/* モバイル画面のみ開発する */}
           <Outlet />
-        </Container>
+        </div>
         <ScrollRestoration />
         <Scripts />
         <LiveReload />

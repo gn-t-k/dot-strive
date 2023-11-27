@@ -1,11 +1,11 @@
 import { json, redirect } from '@remix-run/cloudflare';
-import { Outlet } from '@remix-run/react';
-import { CircleUserRound } from 'lucide-react';
+import { Link, Outlet, useLoaderData, useLocation } from '@remix-run/react';
 
 import { getAuthenticator } from 'app/features/auth/get-authenticator.server';
 import { brandTrainee } from 'app/features/trainee';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from 'app/ui/tabs';
 
-import { Logotype } from '../../ui/logotype';
+import { HeaderNavigation } from './header-navigation';
 
 import type { LoaderFunctionArgs } from '@remix-run/cloudflare';
 import type { FC } from 'react';
@@ -31,17 +31,43 @@ export const loader = async ({
 };
 
 const PageWithNavigationHeader: FC = () => {
+  const { trainee } = useLoaderData<typeof loader>();
+  const { pathname } = useLocation();
+  const location = pathname.split('/')[3];
+
   return (
     <>
       <header className="sticky top-0">
-        <nav className="inline-flex w-full items-center justify-between bg-white py-2 pl-4 pr-1">
-          <Logotype />
-          <div className="p-2">
-            <CircleUserRound size="20px" />
-          </div>
-        </nav>
+        <HeaderNavigation trainee={trainee} />
       </header>
-      <Outlet />
+      {
+        location ? (
+          <Tabs defaultValue={location}>
+            <TabsList className="grid w-full grid-cols-3">
+              <TabsTrigger value="trainings" asChild>
+                <Link to={`/trainees/${trainee.id}/trainings`} className="w-full">
+                  トレーニング
+                </Link>
+              </TabsTrigger>
+              <TabsTrigger value="exercises" asChild>
+                <Link to={`/trainees/${trainee.id}/exercises`} className="w-full">
+                  種目
+                </Link>
+              </TabsTrigger>
+              <TabsTrigger value="muscles" asChild>
+                <Link to={`/trainees/${trainee.id}/muscles`} className="w-full">
+                  部位
+                </Link>
+              </TabsTrigger>
+            </TabsList>
+            <TabsContent value={location}>
+              <Outlet />
+            </TabsContent>
+          </Tabs>
+        ) : (
+          <Outlet />
+        )
+      }
     </>
   );
 };
