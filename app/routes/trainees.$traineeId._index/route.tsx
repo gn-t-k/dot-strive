@@ -1,6 +1,8 @@
 import { Form, useRouteLoaderData } from '@remix-run/react';
 
 import { Button } from 'app/ui/button';
+import { Main } from 'app/ui/main';
+import { Section } from 'app/ui/section';
 
 import { TraineeInfo } from './trainee-info';
 
@@ -13,14 +15,14 @@ const Page: FC = () => {
   const { trainee } = data;
 
   return (
-    <main>
-      <section className="mt-4 inline-flex w-full flex-col items-center justify-start gap-4">
+    <Main>
+      <Section className="mt-4 items-center">
         <TraineeInfo trainee={trainee} />
         <Form method="POST" action="/auth/logout">
           <Button>logout</Button>
         </Form>
-      </section>
-    </main>
+      </Section>
+    </Main>
   );
 };
 export default Page;
