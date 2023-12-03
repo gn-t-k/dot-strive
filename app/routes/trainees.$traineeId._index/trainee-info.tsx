@@ -1,6 +1,6 @@
 import { Annotation } from 'app/ui/annotation';
 import { Avatar, AvatarFallback, AvatarImage } from 'app/ui/avatar';
-import { H2 } from 'app/ui/h2';
+import { Heading } from 'app/ui/heading';
 
 import type { Trainee } from 'app/features/trainee';
 import type { FC } from 'react';
@@ -17,7 +17,7 @@ export const TraineeInfo: FC<Props> = ({
         <AvatarImage src={trainee.image} alt={trainee.name} />
         <AvatarFallback>{trainee.name}</AvatarFallback>
       </Avatar>
-      <H2>{trainee.name}</H2>
+      <Heading level={1}>{trainee.name}</Heading>
       <Annotation>id: {trainee.id}</Annotation>
     </div>
   );
