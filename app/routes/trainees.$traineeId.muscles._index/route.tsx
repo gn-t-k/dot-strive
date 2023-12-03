@@ -1,21 +1,25 @@
 import { createId } from '@paralleldrive/cuid2';
 import { json, redirect } from '@remix-run/cloudflare';
 import { useLoaderData } from '@remix-run/react';
-import { eq } from 'drizzle-orm';
+import { desc, eq } from 'drizzle-orm';
 import { drizzle } from 'drizzle-orm/d1';
-import { MoreHorizontal } from 'lucide-react';
+import { Edit, MoreHorizontal, Trash2 } from 'lucide-react';
+import { useState, useCallback } from 'react';
 import { validationError } from 'remix-validated-form';
 
 import { getAuthenticator } from 'app/features/auth/get-authenticator.server';
 import { validateMuscle } from 'app/features/muscle';
 import { UpsertMuscleForm, validator } from 'app/features/muscle/upsert-muscle-form';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from 'app/ui/card';
+import { Button } from 'app/ui/button';
+import { Card, CardContent, CardDescription, CardHeader } from 'app/ui/card';
+import { DropdownMenu, DropdownMenuContent, DropdownMenuGroup, DropdownMenuItem, DropdownMenuTrigger } from 'app/ui/dropdown-menu';
+import { Heading } from 'app/ui/heading';
 import { Main } from 'app/ui/main';
 import { Section } from 'app/ui/section';
 import { muscles as musclesSchema } from 'database/tables/muscles';
 
 import type { ActionFunctionArgs, LoaderFunctionArgs } from '@remix-run/cloudflare';
-import type { FC } from 'react';
+import type { FC , MouseEventHandler } from 'react';
 
 export const loader = async ({
   context,
@@ -39,7 +43,8 @@ export const loader = async ({
   const data = await database
     .select()
     .from(musclesSchema)
-    .where(eq(musclesSchema.traineeId, params['traineeId']));
+    .where(eq(musclesSchema.traineeId, params['traineeId']))
+    .orderBy(desc(musclesSchema.createdAt));
   const muscles = data.flatMap(datum => {
     const result = validateMuscle(datum);
 
@@ -51,6 +56,15 @@ export const loader = async ({
 
 const Page: FC = () => {
   const { muscles } = useLoaderData<typeof loader>();
+  const [editing, setEditing] = useState<string>('');
+
+  type OnClickEdit = (id: string) => MouseEventHandler;
+  const onClickEdit = useCallback<OnClickEdit>((id) => (_) => {
+    setEditing(id);
+  }, []);
+  const onClickCancel = useCallback<MouseEventHandler>((_) => {
+    setEditing('');
+  }, []);
 
   return (
     <Main>
@@ -58,19 +72,53 @@ const Page: FC = () => {
         <ul className="inline-flex flex-col justify-start gap-4">
           {muscles.map(muscle => {
             return (
-              <li key={muscle.id} className="relative">
-                {/* TODO: Popoverのボタンにする */}
-                <div className="absolute right-4 top-4">
-                  <MoreHorizontal className="h-4 w-4" />
-                  <span className="sr-only">More</span>
-                </div>
-                <Card>
+              <li key={muscle.id}>
+                <Card className="relative">
+                  <DropdownMenu>
+                    <DropdownMenuTrigger className="absolute right-2 top-2" asChild>
+                      <Button size="icon" variant="ghost">
+                        <MoreHorizontal className="h-4 w-4" />
+                      </Button>
+                    </DropdownMenuTrigger>
+                    <DropdownMenuContent align="end">
+                      <DropdownMenuGroup>
+                        <DropdownMenuItem onClick={onClickEdit(muscle.id)}>
+                          <Edit className="mr-2 h-4 w-4" />
+                          編集
+                        </DropdownMenuItem>
+                        <DropdownMenuItem>
+                          <Trash2 className="mr-2 h-4 w-4" />
+                          削除
+                        </DropdownMenuItem>
+                      </DropdownMenuGroup>
+                    </DropdownMenuContent>
+                  </DropdownMenu>
                   <CardHeader>
-                    <CardTitle>{muscle.name}</CardTitle>
+                    {
+                      editing === muscle.id ? (
+                        <div className="flex items-end space-x-2">
+                          <UpsertMuscleForm
+                            method="post"
+                            actionType="update"
+                            muscleId={muscle.id}
+                            validator={validator}
+                            defaultValues={{ name: muscle.name }}
+                            className="grow"
+                          />
+                          <Button
+                            onClick={onClickCancel}
+                            variant="secondary"
+                            className="grow-0"
+                          >
+                            キャンセル
+                          </Button>
+                        </div>
+                      ) :
+                        <Heading level={2}>{muscle.name}</Heading>
+                    }
                   </CardHeader>
                   <CardContent>
-                    {/* TODO: コンポーネント化 */}
-                    <p className="scroll-m-20 text-xl font-semibold tracking-tight">今週のセット数</p>
+                    <Heading level={3} size="sm">今週のセット数</Heading>
                     <p>coming soon</p>
                   </CardContent>
                 </Card>
@@ -80,12 +128,15 @@ const Page: FC = () => {
         </ul>
         <Card>
           <CardHeader>
-            <CardTitle>部位を登録しましょう</CardTitle>
+            <div className="inline-flex justify-between">
+              <Heading level={2}>部位を登録する</Heading>
+            </div>
             <CardDescription>.STRIVEでは、各種目に割り当てる部位に名前をつけて管理することができます。</CardDescription>
           </CardHeader>
           <CardContent>
             <UpsertMuscleForm
               method="post"
+              actionType="create"
               validator={validator}
               resetAfterSubmit
             />
@@ -111,24 +162,58 @@ export const action = async ({
     return validationError(result.error);
   }
 
-  const id = createId();
-  const name = result.data.name;
-  const traineeId = params['traineeId'];
+  const env = context['env'] as Env;
+  const database = drizzle(env.DB);
 
-  const muscle = validateMuscle({ id, name });
-  if (!muscle || !traineeId) {
+  const traineeId = params['traineeId'];
+  if (!traineeId) {
     // TODO: form側でのハンドリングについて調査
     return validationError({ fieldErrors: { muscle: '部位の登録に失敗しました' } });
   }
 
-  const env = context['env'] as Env;
-  const database = drizzle(env.DB);
-  await database.insert(musclesSchema).values({
-    ...muscle,
-    traineeId,
-    createdAt: new Date(),
-    updatedAt: new Date(),
-  });
+  switch (result.data.actionType) {
+    case 'create': {
+      const id = createId();
+      const name = result.data.name;
+    
+      const muscle = validateMuscle({ id, name });
+      if (!muscle) {
+        // TODO: form側でのハンドリングについて調査
+        return validationError({ fieldErrors: { muscle: '部位の登録に失敗しました' } });
+      }
 
-  return json({ muscle });
+      await database
+        .insert(musclesSchema)
+        .values({
+          ...muscle,
+          traineeId,
+          createdAt: new Date(),
+          updatedAt: new Date(),
+        });
+
+      return json({ muscle });
+    }
+    case 'update': {
+      const id = result.data.muscleId;
+      const name = result.data.name;
+
+      const muscle = validateMuscle({ id, name });
+      if (!muscle) {
+        // TODO: form側でのハンドリングについて調査
+        return validationError({ fieldErrors: { muscle: '部位の登録に失敗しました' } });
+      }
+      console.log({ id });
+
+      await database
+        .update(musclesSchema)
+        .set({
+          ...muscle,
+          updatedAt: new Date(),
+        })
+        .where(eq(musclesSchema.id, id));
+
+      return json({ muscle });
+    }
+  }
+
 };
