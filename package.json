@@ -39,7 +39,7 @@
     "remix-validated-form": "^5.1.5",
     "tailwind-merge": "2.1.0",
     "tailwindcss-animate": "1.0.7",
-    "valibot": "0.21.0",
+    "valibot": "0.22.0",
     "zod": "^3.22.4",
     "zod-form-data": "^2.0.2"
   },
