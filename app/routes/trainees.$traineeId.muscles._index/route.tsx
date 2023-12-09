@@ -9,7 +9,7 @@ import { validationError } from 'remix-validated-form';
 
 import { getAuthenticator } from 'app/features/auth/get-authenticator.server';
 import { validateMuscle } from 'app/features/muscle';
-import { UpsertMuscleForm, validator } from 'app/features/muscle/upsert-muscle-form';
+import { MuscleForm, validator } from 'app/features/muscle/muscle-form';
 import { Button } from 'app/ui/button';
 import { Card, CardContent, CardDescription, CardHeader } from 'app/ui/card';
 import { DropdownMenu, DropdownMenuContent, DropdownMenuGroup, DropdownMenuItem, DropdownMenuTrigger } from 'app/ui/dropdown-menu';
@@ -97,7 +97,7 @@ const Page: FC = () => {
                     {
                       editing === muscle.id ? (
                         <div className="flex items-end space-x-2">
-                          <UpsertMuscleForm
+                          <MuscleForm
                             method="post"
                             actionType="update"
                             muscleId={muscle.id}
@@ -134,9 +134,10 @@ const Page: FC = () => {
             <CardDescription>.STRIVEでは、各種目に割り当てる部位に名前をつけて管理することができます。</CardDescription>
           </CardHeader>
           <CardContent>
-            <UpsertMuscleForm
+            <MuscleForm
               method="post"
               actionType="create"
+              muscleId="new"
               validator={validator}
               resetAfterSubmit
             />
@@ -153,7 +154,6 @@ export const action = async ({
   request,
   context,
 }: ActionFunctionArgs) => {
-  // TODO: 作成の場合の処理しか書いてないので、更新の場合の処理も書く
   const result = await validator.validate(
     await request.formData(),
   );
