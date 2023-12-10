@@ -12,31 +12,48 @@ import type { ComponentProps, FC, HTMLAttributes } from 'react';
 export const validator = withZod(
   z.object({
     name: z.string().min(1, { message: '部位の名前を入力してください' }),
-    muscleId: z.string(),
-    actionType: z.union([z.literal('create'), z.literal('update')]),
-  }),
+  }).and(z.union([
+    z.object({
+      actionType: z.literal('create'),
+    }),
+    z.object({
+      actionType: z.literal('update'),
+      muscleId: z.string(),
+    }),
+  ])),
 );
 
 type Props =
-  & ComponentProps<typeof ValidatedForm>
+  & Omit<ComponentProps<typeof ValidatedForm>, 'validator'>
   & {
-    actionType: 'create' | 'update';
-    muscleId: string;
+    actionProps: (
+      | {
+        type: 'create';
+      }
+      | {
+        type: 'update';
+        muscleId: string;
+      }
+    );
   };
 export const MuscleForm: FC<Props> = ({
-  actionType,
-  muscleId,
   className,
+  actionProps,
   ...props
 }) => {
   return (
     <ValidatedForm
       className={cn('flex items-end space-x-2', className)}
+      validator={validator}
       {...props}
     >
-      <input type="hidden" name="muscleId" value={muscleId} />
+      <input
+        type="hidden"
+        name="muscleId"
+        value={actionProps.type === 'create' ? '' : actionProps.muscleId}
+      />
       <MuscleNameField
-        id={muscleId}
+        id={actionProps.type === 'create' ? 'newMuscle' : actionProps.muscleId}
         name="name"
         defaultValue={props.defaultValues?.['name']}
         className="grow"
@@ -44,7 +61,7 @@ export const MuscleForm: FC<Props> = ({
       <Button
         type="submit"
         name="actionType"
-        value={actionType}
+        value={actionProps.type}
         className="grow-0"
       >
         登録

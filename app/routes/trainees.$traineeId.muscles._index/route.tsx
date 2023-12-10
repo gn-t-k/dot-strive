@@ -99,10 +99,9 @@ const Page: FC = () => {
                         <div className="flex items-end space-x-2">
                           <MuscleForm
                             method="post"
-                            actionType="update"
-                            muscleId={muscle.id}
-                            validator={validator}
+                            actionProps={{ type: 'update', muscleId: muscle.id }}
                             defaultValues={{ name: muscle.name }}
+                            onSubmit={() => setEditing('')}
                             className="grow"
                           />
                           <Button
@@ -136,9 +135,7 @@ const Page: FC = () => {
           <CardContent>
             <MuscleForm
               method="post"
-              actionType="create"
-              muscleId="new"
-              validator={validator}
+              actionProps={{ type: 'create' }}
               resetAfterSubmit
             />
           </CardContent>
