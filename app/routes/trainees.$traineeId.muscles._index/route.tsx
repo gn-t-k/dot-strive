@@ -199,7 +199,6 @@ export const action = async ({
         // TODO: form側でのハンドリングについて調査
         return validationError({ fieldErrors: { muscle: '部位の登録に失敗しました' } });
       }
-      console.log({ id });
 
       await database
         .update(musclesSchema)
