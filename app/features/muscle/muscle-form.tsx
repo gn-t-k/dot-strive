@@ -20,6 +20,10 @@ export const validator = withZod(
       actionType: z.literal('update'),
       muscleId: z.string(),
     }),
+    z.object({
+      actionType: z.literal('delete'),
+      muscleId: z.string(),
+    })
   ])),
 );
 

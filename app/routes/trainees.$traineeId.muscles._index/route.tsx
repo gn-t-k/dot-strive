@@ -131,7 +131,25 @@ const Page: FC = () => {
                       </AlertDialogHeader>
                       <AlertDialogFooter>
                         <AlertDialogCancel>キャンセル</AlertDialogCancel>
-                        <AlertDialogAction>削除</AlertDialogAction>
+                        <form method="post">
+                          <input
+                            type="hidden"
+                            name="muscleId"
+                            value={muscle.id}
+                          />
+                          <input
+                            type="hidden"
+                            name="name"
+                            value={muscle.name}
+                          />
+                          <AlertDialogAction
+                            type="submit"
+                            name="actionType"
+                            value="delete"
+                          >
+                            削除
+                          </AlertDialogAction>
+                        </form>
                       </AlertDialogFooter>
                     </AlertDialogContent>
                   </AlertDialog>
@@ -224,6 +242,17 @@ export const action = async ({
         .where(eq(musclesSchema.id, id));
 
       return json({ muscle });
+    }
+    case 'delete': {
+      const id = result.data.muscleId;
+
+      const [deleted] = await database
+        .delete(musclesSchema)
+        .where(eq(musclesSchema.id, id))
+        .returning()
+      const muscle = validateMuscle({id: deleted?.id ?? '', name: deleted?.name ?? ''});
+
+      return json({ muscle })
     }
   }
 
