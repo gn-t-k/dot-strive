@@ -89,7 +89,7 @@ const Page: FC = () => {
                             編集
                           </DropdownMenuItem>
                           <DropdownMenuItem>
-                            <AlertDialogTrigger className='flex'>
+                            <AlertDialogTrigger className="flex">
                               <Trash2 className="mr-2 h-4 w-4" />
                               削除
                             </AlertDialogTrigger>
@@ -249,10 +249,10 @@ export const action = async ({
       const [deleted] = await database
         .delete(musclesSchema)
         .where(eq(musclesSchema.id, id))
-        .returning()
-      const muscle = validateMuscle({id: deleted?.id ?? '', name: deleted?.name ?? ''});
+        .returning();
+      const muscle = validateMuscle({ id: deleted?.id ?? '', name: deleted?.name ?? '' });
 
-      return json({ muscle })
+      return json({ muscle });
     }
   }
 
