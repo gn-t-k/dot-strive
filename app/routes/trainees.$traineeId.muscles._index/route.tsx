@@ -9,7 +9,8 @@ import { validationError } from 'remix-validated-form';
 
 import { getAuthenticator } from 'app/features/auth/get-authenticator.server';
 import { validateMuscle } from 'app/features/muscle';
-import { UpsertMuscleForm, validator } from 'app/features/muscle/upsert-muscle-form';
+import { MuscleForm, validator } from 'app/features/muscle/muscle-form';
+import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from 'app/ui/alert-dialog';
 import { Button } from 'app/ui/button';
 import { Card, CardContent, CardDescription, CardHeader } from 'app/ui/card';
 import { DropdownMenu, DropdownMenuContent, DropdownMenuGroup, DropdownMenuItem, DropdownMenuTrigger } from 'app/ui/dropdown-menu';
@@ -74,53 +75,84 @@ const Page: FC = () => {
             return (
               <li key={muscle.id}>
                 <Card className="relative">
-                  <DropdownMenu>
-                    <DropdownMenuTrigger className="absolute right-2 top-2" asChild>
-                      <Button size="icon" variant="ghost">
-                        <MoreHorizontal className="h-4 w-4" />
-                      </Button>
-                    </DropdownMenuTrigger>
-                    <DropdownMenuContent align="end">
-                      <DropdownMenuGroup>
-                        <DropdownMenuItem onClick={onClickEdit(muscle.id)}>
-                          <Edit className="mr-2 h-4 w-4" />
-                          編集
-                        </DropdownMenuItem>
-                        <DropdownMenuItem>
-                          <Trash2 className="mr-2 h-4 w-4" />
-                          削除
-                        </DropdownMenuItem>
-                      </DropdownMenuGroup>
-                    </DropdownMenuContent>
-                  </DropdownMenu>
-                  <CardHeader>
-                    {
-                      editing === muscle.id ? (
-                        <div className="flex items-end space-x-2">
-                          <UpsertMuscleForm
-                            method="post"
-                            actionType="update"
-                            muscleId={muscle.id}
-                            validator={validator}
-                            defaultValues={{ name: muscle.name }}
-                            className="grow"
+                  <AlertDialog>
+                    <DropdownMenu>
+                      <DropdownMenuTrigger className="absolute right-2 top-2" asChild>
+                        <Button size="icon" variant="ghost">
+                          <MoreHorizontal className="h-4 w-4" />
+                        </Button>
+                      </DropdownMenuTrigger>
+                      <DropdownMenuContent align="end">
+                        <DropdownMenuGroup>
+                          <DropdownMenuItem onClick={onClickEdit(muscle.id)}>
+                            <Edit className="mr-2 h-4 w-4" />
+                            編集
+                          </DropdownMenuItem>
+                          <DropdownMenuItem>
+                            <AlertDialogTrigger className="flex">
+                              <Trash2 className="mr-2 h-4 w-4" />
+                              削除
+                            </AlertDialogTrigger>
+                          </DropdownMenuItem>
+                        </DropdownMenuGroup>
+                      </DropdownMenuContent>
+                    </DropdownMenu>
+                    <CardHeader>
+                      {
+                        editing === muscle.id ? (
+                          <div className="flex items-end space-x-2">
+                            <MuscleForm
+                              method="post"
+                              actionProps={{ type: 'update', muscleId: muscle.id }}
+                              defaultValues={{ name: muscle.name }}
+                              onSubmit={() => setEditing('')}
+                              className="grow"
+                            />
+                            <Button
+                              onClick={onClickCancel}
+                              variant="secondary"
+                              className="grow-0"
+                            >
+                              キャンセル
+                            </Button>
+                          </div>
+                        ) :
+                          <Heading level={2}>{muscle.name}</Heading>
+                      }
+                    </CardHeader>
+                    <CardContent>
+                      <Heading level={3} size="sm">今週のセット数</Heading>
+                      <p>coming soon</p>
+                    </CardContent>
+                    <AlertDialogContent>
+                      <AlertDialogHeader>
+                        <AlertDialogTitle>部位の削除</AlertDialogTitle>
+                        <AlertDialogDescription>部位を削除しますか？</AlertDialogDescription>
+                      </AlertDialogHeader>
+                      <AlertDialogFooter>
+                        <AlertDialogCancel>キャンセル</AlertDialogCancel>
+                        <form method="post">
+                          <input
+                            type="hidden"
+                            name="muscleId"
+                            value={muscle.id}
                           />
-                          <Button
-                            onClick={onClickCancel}
-                            variant="secondary"
-                            className="grow-0"
+                          <input
+                            type="hidden"
+                            name="name"
+                            value={muscle.name}
+                          />
+                          <AlertDialogAction
+                            type="submit"
+                            name="actionType"
+                            value="delete"
                           >
-                            キャンセル
-                          </Button>
-                        </div>
-                      ) :
-                        <Heading level={2}>{muscle.name}</Heading>
-                    }
-                  </CardHeader>
-                  <CardContent>
-                    <Heading level={3} size="sm">今週のセット数</Heading>
-                    <p>coming soon</p>
-                  </CardContent>
+                            削除
+                          </AlertDialogAction>
+                        </form>
+                      </AlertDialogFooter>
+                    </AlertDialogContent>
+                  </AlertDialog>
                 </Card>
               </li>
             );
@@ -134,10 +166,9 @@ const Page: FC = () => {
             <CardDescription>.STRIVEでは、各種目に割り当てる部位に名前をつけて管理することができます。</CardDescription>
           </CardHeader>
           <CardContent>
-            <UpsertMuscleForm
+            <MuscleForm
               method="post"
-              actionType="create"
-              validator={validator}
+              actionProps={{ type: 'create' }}
               resetAfterSubmit
             />
           </CardContent>
@@ -153,7 +184,6 @@ export const action = async ({
   request,
   context,
 }: ActionFunctionArgs) => {
-  // TODO: 作成の場合の処理しか書いてないので、更新の場合の処理も書く
   const result = await validator.validate(
     await request.formData(),
   );
@@ -202,7 +232,6 @@ export const action = async ({
         // TODO: form側でのハンドリングについて調査
         return validationError({ fieldErrors: { muscle: '部位の登録に失敗しました' } });
       }
-      console.log({ id });
 
       await database
         .update(musclesSchema)
@@ -211,6 +240,17 @@ export const action = async ({
           updatedAt: new Date(),
         })
         .where(eq(musclesSchema.id, id));
+
+      return json({ muscle });
+    }
+    case 'delete': {
+      const id = result.data.muscleId;
+
+      const [deleted] = await database
+        .delete(musclesSchema)
+        .where(eq(musclesSchema.id, id))
+        .returning();
+      const muscle = validateMuscle({ id: deleted?.id ?? '', name: deleted?.name ?? '' });
 
       return json({ muscle });
     }

@@ -9,30 +9,55 @@ import { Label } from 'app/ui/label';
 
 import type { ComponentProps, FC, HTMLAttributes } from 'react';
 
-const upsertSchema = z.union([
-  z.object({
-    actionType: z.literal('create'),
-    muscleId: z.undefined(),
-  }),
-  z.object({
-    actionType: z.literal('update'),
-    muscleId: z.string(),
-  }),
-]);
 export const validator = withZod(
   z.object({
     name: z.string().min(1, { message: '部位の名前を入力してください' }),
-  }).and(upsertSchema),
+  }).and(z.union([
+    z.object({
+      actionType: z.literal('create'),
+    }),
+    z.object({
+      actionType: z.literal('update'),
+      muscleId: z.string(),
+    }),
+    z.object({
+      actionType: z.literal('delete'),
+      muscleId: z.string(),
+    })
+  ])),
 );
 
 type Props =
-  & ComponentProps<typeof ValidatedForm>
-  & z.infer<typeof upsertSchema>;
-export const UpsertMuscleForm: FC<Props> = ({ actionType, muscleId, ...props }) => {
+  & Omit<ComponentProps<typeof ValidatedForm>, 'validator'>
+  & {
+    actionProps: (
+      | {
+        type: 'create';
+      }
+      | {
+        type: 'update';
+        muscleId: string;
+      }
+    );
+  };
+export const MuscleForm: FC<Props> = ({
+  className,
+  actionProps,
+  ...props
+}) => {
   return (
-    <ValidatedForm {...props} className="flex items-end space-x-2">
-      <input type="hidden" name="muscleId" value={muscleId} />
+    <ValidatedForm
+      className={cn('flex items-end space-x-2', className)}
+      validator={validator}
+      {...props}
+    >
+      <input
+        type="hidden"
+        name="muscleId"
+        value={actionProps.type === 'create' ? '' : actionProps.muscleId}
+      />
       <MuscleNameField
+        id={actionProps.type === 'create' ? 'newMuscle' : actionProps.muscleId}
         name="name"
         defaultValue={props.defaultValues?.['name']}
         className="grow"
@@ -40,7 +65,7 @@ export const UpsertMuscleForm: FC<Props> = ({ actionType, muscleId, ...props }) 
       <Button
         type="submit"
         name="actionType"
-        value={actionType}
+        value={actionProps.type}
         className="grow-0"
       >
         登録
@@ -57,14 +82,19 @@ type MuscleNameFieldProps =
 const MuscleNameField: FC<MuscleNameFieldProps> = ({
   name,
   className,
+  id = 'new',
   ...props
 }) => {
   const { error, getInputProps } = useField(name);
 
   return (
     <div className={cn('space-y-2', className)} {...props}>
-      <Label htmlFor={name}>名前</Label>
-      <Input type="text" placeholder="例: 大胸筋" {...getInputProps({ id: name })} />
+      <Label htmlFor={id}>名前</Label>
+      <Input
+        type="text"
+        placeholder="例: 大胸筋"
+        {...getInputProps({ id })}
+      />
       {
         error &&
         // TODO: コンポーネント化
