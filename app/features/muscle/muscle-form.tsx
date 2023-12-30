@@ -23,7 +23,7 @@ export const validator = withZod(
     z.object({
       actionType: z.literal('delete'),
       muscleId: z.string(),
-    })
+    }),
   ])),
 );
 
