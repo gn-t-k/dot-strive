@@ -103,10 +103,11 @@ const Page: FC = () => {
                           <div className="flex items-end space-x-2">
                             <MuscleForm
                               method="post"
-                              actionProps={{ type: 'update', muscleId: muscle.id }}
-                              defaultValues={{ name: muscle.name }}
+                              id={muscle.id}
+                              name={muscle.name}
                               onSubmit={() => setEditing('')}
                               className="grow"
+                              update
                             />
                             <Button
                               onClick={onClickCancel}
@@ -224,7 +225,7 @@ export const action = async ({
       return json({ muscle });
     }
     case 'update': {
-      const id = result.data.muscleId;
+      const id = result.data.id;
       const name = result.data.name;
 
       const muscle = validateMuscle({ id, name });
@@ -244,7 +245,7 @@ export const action = async ({
       return json({ muscle });
     }
     case 'delete': {
-      const id = result.data.muscleId;
+      const id = result.data.id;
 
       const [deleted] = await database
         .delete(musclesSchema)
