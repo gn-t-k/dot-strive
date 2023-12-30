@@ -1,15 +1,13 @@
-import { createId } from '@paralleldrive/cuid2';
 import { json, redirect } from '@remix-run/cloudflare';
 import { useLoaderData } from '@remix-run/react';
 import { desc, eq } from 'drizzle-orm';
 import { drizzle } from 'drizzle-orm/d1';
 import { Edit, MoreHorizontal, Trash2 } from 'lucide-react';
 import { useState, useCallback } from 'react';
-import { validationError } from 'remix-validated-form';
 
 import { getAuthenticator } from 'app/features/auth/get-authenticator.server';
 import { validateMuscle } from 'app/features/muscle';
-import { MuscleForm, validator } from 'app/features/muscle/muscle-form';
+import { MuscleForm } from 'app/features/muscle/muscle-form';
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from 'app/ui/alert-dialog';
 import { Button } from 'app/ui/button';
 import { Card, CardContent, CardDescription, CardHeader } from 'app/ui/card';
@@ -19,7 +17,7 @@ import { Main } from 'app/ui/main';
 import { Section } from 'app/ui/section';
 import { muscles as musclesSchema } from 'database/tables/muscles';
 
-import type { ActionFunctionArgs, LoaderFunctionArgs } from '@remix-run/cloudflare';
+import type { LoaderFunctionArgs } from '@remix-run/cloudflare';
 import type { FC , MouseEventHandler } from 'react';
 
 export const loader = async ({
@@ -132,7 +130,7 @@ const Page: FC = () => {
                       </AlertDialogHeader>
                       <AlertDialogFooter>
                         <AlertDialogCancel>キャンセル</AlertDialogCancel>
-                        <form method="post">
+                        <form method="post" action="delete">
                           <input
                             type="hidden"
                             name="muscleId"
@@ -169,7 +167,6 @@ const Page: FC = () => {
           <CardContent>
             <MuscleForm
               method="post"
-              actionProps={{ type: 'create' }}
               resetAfterSubmit
             />
           </CardContent>
@@ -179,82 +176,3 @@ const Page: FC = () => {
   );
 };
 export default Page;
-
-export const action = async ({
-  params,
-  request,
-  context,
-}: ActionFunctionArgs) => {
-  const result = await validator.validate(
-    await request.formData(),
-  );
-
-  if (result.error) {
-    return validationError(result.error);
-  }
-
-  const env = context['env'] as Env;
-  const database = drizzle(env.DB);
-
-  const traineeId = params['traineeId'];
-  if (!traineeId) {
-    // TODO: form側でのハンドリングについて調査
-    return validationError({ fieldErrors: { muscle: '部位の登録に失敗しました' } });
-  }
-
-  switch (result.data.actionType) {
-    case 'create': {
-      const id = createId();
-      const name = result.data.name;
-    
-      const muscle = validateMuscle({ id, name });
-      if (!muscle) {
-        // TODO: form側でのハンドリングについて調査
-        return validationError({ fieldErrors: { muscle: '部位の登録に失敗しました' } });
-      }
-
-      await database
-        .insert(musclesSchema)
-        .values({
-          ...muscle,
-          traineeId,
-          createdAt: new Date(),
-          updatedAt: new Date(),
-        });
-
-      return json({ muscle });
-    }
-    case 'update': {
-      const id = result.data.id;
-      const name = result.data.name;
-
-      const muscle = validateMuscle({ id, name });
-      if (!muscle) {
-        // TODO: form側でのハンドリングについて調査
-        return validationError({ fieldErrors: { muscle: '部位の登録に失敗しました' } });
-      }
-
-      await database
-        .update(musclesSchema)
-        .set({
-          ...muscle,
-          updatedAt: new Date(),
-        })
-        .where(eq(musclesSchema.id, id));
-
-      return json({ muscle });
-    }
-    case 'delete': {
-      const id = result.data.id;
-
-      const [deleted] = await database
-        .delete(musclesSchema)
-        .where(eq(musclesSchema.id, id))
-        .returning();
-      const muscle = validateMuscle({ id: deleted?.id ?? '', name: deleted?.name ?? '' });
-
-      return json({ muscle });
-    }
-  }
-
-};

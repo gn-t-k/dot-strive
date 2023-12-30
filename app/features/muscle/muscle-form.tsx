@@ -29,8 +29,9 @@ export const MuscleForm: FC<Props> = ({
   return (
     <ValidatedForm
       className={cn('flex items-end space-x-2', className)}
-      validator={validator}
       {...props}
+      validator={validator}
+      action="createOrUpdate"
     >
       <input
         type="hidden"
