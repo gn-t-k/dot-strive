@@ -19,7 +19,7 @@ export const validator = withZod(
 type Props =
   & Omit<ComponentProps<typeof ValidatedForm>, 'validator'>
   & (
-    | { update?: true; id: string; name: string }
+    | { update?: true; muscleId: string; name: string }
     | { update?: false }
   );
 export const MuscleForm: FC<Props> = ({
@@ -28,18 +28,19 @@ export const MuscleForm: FC<Props> = ({
 }) => {
   return (
     <ValidatedForm
-      className={cn('flex items-end space-x-2', className)}
       {...props}
+      className={cn('flex items-end space-x-2', className)}
+      method="post"
       validator={validator}
       action="createOrUpdate"
     >
       <input
         type="hidden"
-        name="muscleId"
-        value={props.update ? props.id : undefined}
+        name="id"
+        value={props.update ? props.muscleId : undefined}
       />
       <MuscleNameField
-        id={props.update ? props.id : undefined}
+        id={props.update ? props.muscleId : undefined}
         name="name"
         defaultValue={props.update ? props.name : undefined}
         className="grow"

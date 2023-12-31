@@ -100,8 +100,7 @@ const Page: FC = () => {
                         editing === muscle.id ? (
                           <div className="flex items-end space-x-2">
                             <MuscleForm
-                              method="post"
-                              id={muscle.id}
+                              muscleId={muscle.id}
                               name={muscle.name}
                               onSubmit={() => setEditing('')}
                               className="grow"
@@ -141,11 +140,7 @@ const Page: FC = () => {
                             name="name"
                             value={muscle.name}
                           />
-                          <AlertDialogAction
-                            type="submit"
-                            name="actionType"
-                            value="delete"
-                          >
+                          <AlertDialogAction type="submit">
                             削除
                           </AlertDialogAction>
                         </form>
@@ -165,10 +160,7 @@ const Page: FC = () => {
             <CardDescription>.STRIVEでは、各種目に割り当てる部位に名前をつけて管理することができます。</CardDescription>
           </CardHeader>
           <CardContent>
-            <MuscleForm
-              method="post"
-              resetAfterSubmit
-            />
+            <MuscleForm resetAfterSubmit />
           </CardContent>
         </Card>
       </Section>
