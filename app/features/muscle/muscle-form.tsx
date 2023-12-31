@@ -11,63 +11,41 @@ import type { ComponentProps, FC, HTMLAttributes } from 'react';
 
 export const validator = withZod(
   z.object({
+    id: z.string().optional(),
     name: z.string().min(1, { message: '部位の名前を入力してください' }),
-  }).and(z.union([
-    z.object({
-      actionType: z.literal('create'),
-    }),
-    z.object({
-      actionType: z.literal('update'),
-      muscleId: z.string(),
-    }),
-    z.object({
-      actionType: z.literal('delete'),
-      muscleId: z.string(),
-    }),
-  ])),
+  }),
 );
 
 type Props =
   & Omit<ComponentProps<typeof ValidatedForm>, 'validator'>
-  & {
-    actionProps: (
-      | {
-        type: 'create';
-      }
-      | {
-        type: 'update';
-        muscleId: string;
-      }
-    );
-  };
+  & (
+    | { update?: true; muscleId: string; name: string }
+    | { update?: false }
+  );
 export const MuscleForm: FC<Props> = ({
   className,
-  actionProps,
   ...props
 }) => {
   return (
     <ValidatedForm
-      className={cn('flex items-end space-x-2', className)}
-      validator={validator}
       {...props}
+      className={cn('flex items-end space-x-2', className)}
+      method="post"
+      validator={validator}
+      action="createOrUpdate"
     >
       <input
         type="hidden"
-        name="muscleId"
-        value={actionProps.type === 'create' ? '' : actionProps.muscleId}
+        name="id"
+        value={props.update ? props.muscleId : undefined}
       />
       <MuscleNameField
-        id={actionProps.type === 'create' ? 'newMuscle' : actionProps.muscleId}
+        id={props.update ? props.muscleId : undefined}
         name="name"
-        defaultValue={props.defaultValues?.['name']}
+        defaultValue={props.update ? props.name : undefined}
         className="grow"
       />
-      <Button
-        type="submit"
-        name="actionType"
-        value={actionProps.type}
-        className="grow-0"
-      >
+      <Button type="submit" className="grow-0">
         登録
       </Button>
     </ValidatedForm>
