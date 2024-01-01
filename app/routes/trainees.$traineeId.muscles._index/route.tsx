@@ -160,7 +160,7 @@ const Page: FC = () => {
             <CardDescription>.STRIVEでは、各種目に割り当てる部位に名前をつけて管理することができます。</CardDescription>
           </CardHeader>
           <CardContent>
-            <MuscleForm resetAfterSubmit />
+            {/* <MuscleForm resetAfterSubmit /> */}
           </CardContent>
         </Card>
       </Section>
