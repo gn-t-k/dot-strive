@@ -1,5 +1,5 @@
 import { json, redirect } from '@remix-run/cloudflare';
-import { useLoaderData } from '@remix-run/react';
+import { Form, useLoaderData } from '@remix-run/react';
 import { desc, eq } from 'drizzle-orm';
 import { drizzle } from 'drizzle-orm/d1';
 import { Edit, MoreHorizontal, Trash2 } from 'lucide-react';
@@ -129,7 +129,7 @@ const Page: FC = () => {
                       </AlertDialogHeader>
                       <AlertDialogFooter>
                         <AlertDialogCancel>キャンセル</AlertDialogCancel>
-                        <form method="post" action="delete">
+                        <Form method="post" action="delete">
                           <input
                             type="hidden"
                             name="muscleId"
@@ -143,7 +143,7 @@ const Page: FC = () => {
                           <AlertDialogAction type="submit">
                             削除
                           </AlertDialogAction>
-                        </form>
+                        </Form>
                       </AlertDialogFooter>
                     </AlertDialogContent>
                   </AlertDialog>
@@ -160,7 +160,7 @@ const Page: FC = () => {
             <CardDescription>.STRIVEでは、各種目に割り当てる部位に名前をつけて管理することができます。</CardDescription>
           </CardHeader>
           <CardContent>
-            {/* <MuscleForm resetAfterSubmit /> */}
+            <MuscleForm resetAfterSubmit />
           </CardContent>
         </Card>
       </Section>

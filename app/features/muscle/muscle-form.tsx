@@ -32,7 +32,7 @@ export const MuscleForm: FC<Props> = ({
       className={cn('flex items-end space-x-2', className)}
       method="post"
       validator={validator}
-      action="createOrUpdate"
+      action={props.update ? 'update' : 'create'}
     >
       <input
         type="hidden"
