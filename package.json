@@ -31,7 +31,7 @@
     "clsx": "2.1.0",
     "drizzle-orm": "0.29.3",
     "isbot": "4.3.0",
-    "lucide-react": "^0.306.0",
+    "lucide-react": "^0.307.0",
     "react": "18.2.0",
     "react-dom": "18.2.0",
     "remix-auth": "3.6.0",
