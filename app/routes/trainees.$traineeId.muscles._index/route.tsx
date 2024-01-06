@@ -1,5 +1,5 @@
 import { json, redirect } from '@remix-run/cloudflare';
-import { useLoaderData } from '@remix-run/react';
+import { Form, useLoaderData } from '@remix-run/react';
 import { desc, eq } from 'drizzle-orm';
 import { drizzle } from 'drizzle-orm/d1';
 import { Edit, MoreHorizontal, Trash2 } from 'lucide-react';
@@ -7,7 +7,7 @@ import { useState, useCallback } from 'react';
 
 import { getAuthenticator } from 'app/features/auth/get-authenticator.server';
 import { validateMuscle } from 'app/features/muscle';
-import { MuscleForm } from 'app/features/muscle/muscle-form';
+import { MuscleForm, validateForm } from 'app/features/muscle/muscle-form';
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from 'app/ui/alert-dialog';
 import { Button } from 'app/ui/button';
 import { Card, CardContent, CardDescription, CardHeader } from 'app/ui/card';
@@ -17,7 +17,7 @@ import { Main } from 'app/ui/main';
 import { Section } from 'app/ui/section';
 import { muscles as musclesSchema } from 'database/tables/muscles';
 
-import type { LoaderFunctionArgs } from '@remix-run/cloudflare';
+import type { ActionFunctionArgs, LoaderFunctionArgs } from '@remix-run/cloudflare';
 import type { FC , MouseEventHandler } from 'react';
 
 export const loader = async ({
@@ -55,7 +55,9 @@ export const loader = async ({
 
 const Page: FC = () => {
   const { muscles } = useLoaderData<typeof loader>();
-  const [editing, setEditing] = useState<string>('');
+
+  const [editing, setEditing] = useState<MuscleId>('');
+  type MuscleId = string;
 
   type OnClickEdit = (id: string) => MouseEventHandler;
   const onClickEdit = useCallback<OnClickEdit>((id) => (_) => {
@@ -100,11 +102,10 @@ const Page: FC = () => {
                         editing === muscle.id ? (
                           <div className="flex items-end space-x-2">
                             <MuscleForm
-                              muscleId={muscle.id}
-                              name={muscle.name}
+                              actionType="update"
+                              defaultValues={{ id: muscle.id, name: muscle.name }}
                               onSubmit={() => setEditing('')}
                               className="grow"
-                              update
                             />
                             <Button
                               onClick={onClickCancel}
@@ -129,10 +130,10 @@ const Page: FC = () => {
                       </AlertDialogHeader>
                       <AlertDialogFooter>
                         <AlertDialogCancel>キャンセル</AlertDialogCancel>
-                        <form method="post" action="delete">
+                        <Form method="post">
                           <input
                             type="hidden"
-                            name="muscleId"
+                            name="id"
                             value={muscle.id}
                           />
                           <input
@@ -140,10 +141,10 @@ const Page: FC = () => {
                             name="name"
                             value={muscle.name}
                           />
-                          <AlertDialogAction type="submit">
+                          <AlertDialogAction type="submit" name="actionType" value="delete">
                             削除
                           </AlertDialogAction>
-                        </form>
+                        </Form>
                       </AlertDialogFooter>
                     </AlertDialogContent>
                   </AlertDialog>
@@ -160,7 +161,7 @@ const Page: FC = () => {
             <CardDescription>.STRIVEでは、各種目に割り当てる部位に名前をつけて管理することができます。</CardDescription>
           </CardHeader>
           <CardContent>
-            {/* <MuscleForm resetAfterSubmit /> */}
+            <MuscleForm actionType="create" />
           </CardContent>
         </Card>
       </Section>
@@ -168,3 +169,66 @@ const Page: FC = () => {
   );
 };
 export default Page;
+
+export const action = async ({
+  params,
+  request,
+  context,
+}: ActionFunctionArgs) => {
+  const formData = await request.formData();
+  const { id, name, actionType } = validateForm(formData);
+  console.log({ id, name, actionType });
+  if (!id.success || !name.success || !actionType.success) {
+    return {
+      errorMessage: {
+        id: id.success ? [] : id.errorMessages,
+        name: name.success ? [] : name.errorMessages,
+        actionType: actionType.success ? [] : actionType.errorMessages,
+      },
+    };
+  }
+
+  const env = context['env'] as Env;
+  const database = drizzle(env.DB);
+
+  const traineeId = params['traineeId'];
+  if (!traineeId) {
+    console.log({ traineeId });
+    throw new Response('Bad Request', { status: 400 });
+  }
+
+  switch (actionType.value) {
+    case 'create': {
+      await database
+        .insert(musclesSchema)
+        .values({
+          id: id.value,
+          name: name.value,
+          traineeId,
+          createdAt: new Date(),
+          updatedAt: new Date(),
+        });
+      break;
+    }
+    case 'update': {
+      await database
+        .update(musclesSchema)
+        .set({
+          name: name.value,
+          updatedAt: new Date(),
+        })
+        .where(eq(musclesSchema.id, id.value));
+      break;
+    }
+    case 'delete': {
+      const returning = await database
+        .delete(musclesSchema)
+        .where(eq(musclesSchema.id, id.value))
+        .returning();
+      console.log({ returning });
+      break;
+    }
+  }
+  
+  return redirect(`/trainees/${traineeId}/muscles`);
+};
