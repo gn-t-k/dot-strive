@@ -1,5 +1,5 @@
 import { json, redirect } from '@remix-run/cloudflare';
-import { Form, useLoaderData } from '@remix-run/react';
+import { Form, useActionData, useLoaderData } from '@remix-run/react';
 import { desc, eq } from 'drizzle-orm';
 import { drizzle } from 'drizzle-orm/d1';
 import { Edit, MoreHorizontal, Trash2 } from 'lucide-react';
@@ -55,6 +55,7 @@ export const loader = async ({
 
 const Page: FC = () => {
   const { muscles } = useLoaderData<typeof loader>();
+  const actionData = useActionData<typeof action>();
 
   const [editing, setEditing] = useState<MuscleId>('');
   type MuscleId = string;
@@ -105,6 +106,7 @@ const Page: FC = () => {
                               actionType="update"
                               defaultValues={{ id: muscle.id, name: muscle.name }}
                               onSubmit={() => setEditing('')}
+                              errorMessage={actionData?.errorMessage}
                               className="grow"
                             />
                             <Button
@@ -161,7 +163,7 @@ const Page: FC = () => {
             <CardDescription>.STRIVEでは、各種目に割り当てる部位に名前をつけて管理することができます。</CardDescription>
           </CardHeader>
           <CardContent>
-            <MuscleForm actionType="create" />
+            <MuscleForm actionType="create" errorMessage={actionData?.errorMessage} />
           </CardContent>
         </Card>
       </Section>
