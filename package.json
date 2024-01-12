@@ -30,7 +30,7 @@
     "class-variance-authority": "0.7.0",
     "clsx": "2.1.0",
     "drizzle-orm": "0.29.3",
-    "isbot": "4.3.0",
+    "isbot": "4.4.0",
     "lucide-react": "^0.309.0",
     "react": "18.2.0",
     "react-dom": "18.2.0",
