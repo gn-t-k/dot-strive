@@ -19,7 +19,7 @@ type Props =
     };
     errorMessage?: {
       name: ErrorMessages;
-    };
+    } | undefined;
   };
 export const MuscleForm: FC<Props> = ({
   className,
