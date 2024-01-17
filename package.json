@@ -43,7 +43,7 @@
     "zod-form-data": "2.0.2"
   },
   "devDependencies": {
-    "@cloudflare/workers-types": "4.20231218.0",
+    "@cloudflare/workers-types": "4.20240117.0",
     "@remix-run/dev": "2.5.0",
     "@remix-run/eslint-config": "2.5.0",
     "@tsconfig/strictest": "2.0.2",
