@@ -177,9 +177,31 @@ export const action = async ({
   request,
   context,
 }: ActionFunctionArgs) => {
+  const env = context['env'] as Env;
+  const database = drizzle(env.DB);
+  const authenticator = getAuthenticator(context);
+  const user = await authenticator.isAuthenticated(request);
+
+  if (!user) {
+    return redirect('/login');
+  }
+
+  const traineeId = params['traineeId'];
+  if (!traineeId) {
+    throw new Response('Bad Request', { status: 400 });
+  }
+
+  const data = await database
+    .select({
+      name: musclesSchema.name,
+    })
+    .from(musclesSchema)
+    .where(eq(musclesSchema.traineeId, traineeId))
+    .orderBy(desc(musclesSchema.createdAt));
+  const musclesName = data.map(datum => datum.name);
+
   const formData = await request.formData();
-  const { id, name, actionType } = validateForm(formData);
-  console.log({ id, name, actionType });
+  const { id, name, actionType } = validateForm(formData, musclesName);
   if (!id.success || !name.success || !actionType.success) {
     return {
       errorMessage: {
@@ -188,15 +210,6 @@ export const action = async ({
         actionType: actionType.success ? [] : actionType.errorMessages,
       },
     };
-  }
-
-  const env = context['env'] as Env;
-  const database = drizzle(env.DB);
-
-  const traineeId = params['traineeId'];
-  if (!traineeId) {
-    console.log({ traineeId });
-    throw new Response('Bad Request', { status: 400 });
   }
 
   switch (actionType.value) {
@@ -223,11 +236,10 @@ export const action = async ({
       break;
     }
     case 'delete': {
-      const returning = await database
+      await database
         .delete(musclesSchema)
         .where(eq(musclesSchema.id, id.value))
         .returning();
-      console.log({ returning });
       break;
     }
   }

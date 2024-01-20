@@ -7,6 +7,7 @@ import { Button } from 'app/ui/button';
 import { Input } from 'app/ui/input';
 import { Label } from 'app/ui/label';
 
+import type { Muscle } from '.';
 import type { ComponentProps, FC, HTMLAttributes } from 'react';
 
 type Props =
@@ -81,11 +82,12 @@ const MuscleNameField: FC<MuscleNameFieldProps> = ({
   );
 };
 
-type ValidateForm = (formData: FormData) => {
+type ValidateForm = (formData: FormData, registeredMuscleNames: RegisteredMuscleNames) => {
   id: ValidationResult;
   name: ValidationResult;
   actionType: ValidationResult;
 };
+type RegisteredMuscleNames = Muscle['name'][];
 type ValidationResult = (
   | {
     success: true;
@@ -97,13 +99,13 @@ type ValidationResult = (
   }
 );
 type ErrorMessages = string[];
-export const validateForm: ValidateForm = (formData) => {
+export const validateForm: ValidateForm = (formData, registeredMuscleNames) => {
   const id = formData.get('id')?.toString() || createId();
 
   const name = formData.get('name')?.toString();
   const nameSchema = v.string([
     v.minLength(1, '名前を入力してください'),
-    // TODO: 重複チェック
+    v.custom((value) => !registeredMuscleNames.includes(value), '既に登録されています'),
   ]);
   const nameParseResult = v.safeParse(nameSchema, name);
 
