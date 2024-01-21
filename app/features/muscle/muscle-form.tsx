@@ -32,7 +32,7 @@ export const MuscleForm: FC<Props> = ({
     <Form
       {...props}
       method="post"
-      className={cn('flex items-end space-x-2', className)}
+      className={cn('flex-col space-y-4', className)}
     >
       <input
         type="hidden"
