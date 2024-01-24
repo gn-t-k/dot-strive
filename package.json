@@ -38,7 +38,7 @@
     "remix-auth-google": "2.0.0",
     "tailwind-merge": "2.2.1",
     "tailwindcss-animate": "1.0.7",
-    "valibot": "0.26.0",
+    "valibot": "0.27.0",
     "zod": "3.22.4",
     "zod-form-data": "2.0.2"
   },
