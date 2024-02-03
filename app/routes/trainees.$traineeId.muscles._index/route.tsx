@@ -80,18 +80,18 @@ const Page: FC = () => {
                     <DropdownMenu>
                       <DropdownMenuTrigger className="absolute right-2 top-2" asChild>
                         <Button size="icon" variant="ghost">
-                          <MoreHorizontal className="h-4 w-4" />
+                          <MoreHorizontal className="size-4" />
                         </Button>
                       </DropdownMenuTrigger>
                       <DropdownMenuContent align="end">
                         <DropdownMenuGroup>
                           <DropdownMenuItem onClick={onClickEdit(muscle.id)}>
-                            <Edit className="mr-2 h-4 w-4" />
+                            <Edit className="mr-2 size-4" />
                             編集
                           </DropdownMenuItem>
                           <DropdownMenuItem>
                             <AlertDialogTrigger className="flex">
-                              <Trash2 className="mr-2 h-4 w-4" />
+                              <Trash2 className="mr-2 size-4" />
                               削除
                             </AlertDialogTrigger>
                           </DropdownMenuItem>
