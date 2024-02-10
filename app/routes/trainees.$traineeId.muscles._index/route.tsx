@@ -1,11 +1,11 @@
 import { createId } from '@paralleldrive/cuid2';
 import { json, redirect } from '@remix-run/cloudflare';
-import { Form, useLoaderData } from '@remix-run/react';
+import { Form, useLoaderData, useSearchParams } from '@remix-run/react';
 import { parseWithValibot } from 'conform-to-valibot';
 import { eq } from 'drizzle-orm';
 import { drizzle } from 'drizzle-orm/d1';
 import { Edit, MoreHorizontal, Trash2 } from 'lucide-react';
-import { useState, useCallback } from 'react';
+import { useCallback } from 'react';
 
 import { getAuthenticator } from 'app/features/auth/get-authenticator.server';
 import { getMusclesByTraineeId } from 'app/features/muscle/get-muscles-by-trainee-id';
@@ -46,17 +46,21 @@ export const loader = async ({
 
 const Page: FC = () => {
   const { muscles } = useLoaderData<typeof loader>();
+  const [searchParameters, setSearchParameters] = useSearchParams();
 
-  const [editing, setEditing] = useState<MuscleId>('');
-  type MuscleId = string;
+  const editing = searchParameters.get('editing');
 
   type OnClickEdit = (id: string) => MouseEventHandler;
   const onClickEdit = useCallback<OnClickEdit>((id) => (_) => {
-    setEditing(id);
-  }, []);
+    const parameters = new URLSearchParams();
+    parameters.set('editing', id);
+    setSearchParameters(parameters, { preventScrollReset: true });
+  }, [setSearchParameters]);
   const onClickCancel = useCallback<MouseEventHandler>((_) => {
-    setEditing('');
-  }, []);
+    const parameters = new URLSearchParams();
+    parameters.delete('editing');
+    setSearchParameters(parameters, { preventScrollReset: true });
+  }, [setSearchParameters]);
 
   return (
     <Main>
@@ -80,7 +84,7 @@ const Page: FC = () => {
                             編集
                           </DropdownMenuItem>
                           <DropdownMenuItem>
-                            <AlertDialogTrigger className="flex">
+                            <AlertDialogTrigger className="flex w-full">
                               <Trash2 className="mr-2 size-4" />
                               削除
                             </AlertDialogTrigger>
@@ -96,7 +100,6 @@ const Page: FC = () => {
                               registeredMuscles={muscles}
                               actionType="update"
                               defaultValues={{ id: muscle.id, name: muscle.name }}
-                              onSubmit={() => setEditing('')}
                               className="grow"
                             />
                             <Button
@@ -180,7 +183,7 @@ export const action = async ({
   }
 
   if (params['traineeId'] !== user.id) {
-    throw new Response('Bad Request', { status: 400 });
+    throw new Response('Bad Request1', { status: 400 });
   }
   const traineeId = params['traineeId'];
 
@@ -209,16 +212,20 @@ export const action = async ({
           updatedAt: new Date(),
         });
 
-      return redirect(`/trainees/${traineeId}/muscles`);
+      return {
+        success: true,
+        submission: submission.reply(),
+      };
     }
 
     case 'update': {
       const muscleId = formData.get('id')?.toString();
       if (!muscleId) {
-        throw new Response('Bad Request', { status: 400 });
+        throw new Response('Bad Request2', { status: 400 });
       }
 
       const muscles = await getMusclesByTraineeId(database)(traineeId);
+
       const submission = parseWithValibot(formData, {
         schema: getMuscleFormSchema(muscles),
       });
@@ -237,7 +244,10 @@ export const action = async ({
         })
         .where(eq(musclesSchema.id, muscleId));
 
-      return redirect(`/trainees/${traineeId}/muscles`);
+      return {
+        success: true,
+        submission: submission.reply(),
+      };
     }
 
     case 'delete': {
@@ -250,11 +260,13 @@ export const action = async ({
         .delete(musclesSchema)
         .where(eq(musclesSchema.id, muscleId));
 
-      return redirect(`/trainees/${traineeId}/muscles`);
+      return {
+        success: true,
+      };
     }
 
     default: {
-      throw new Response('Bad Request', { status: 400 });
+      throw new Response('Bad Request3', { status: 400 });
     }
   }
 };

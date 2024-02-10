@@ -1,7 +1,7 @@
 import { getFormProps, getInputProps, useForm } from '@conform-to/react';
 import { Form } from '@remix-run/react';
 import { parseWithValibot } from 'conform-to-valibot';
-import { custom, minLength, object, optional, string } from 'valibot';
+import { custom, nonOptional, object, optional, string } from 'valibot';
 
 import { cn } from 'app/libs/shadcn/utils';
 import { Button } from 'app/ui/button';
@@ -14,10 +14,13 @@ import type { ComponentProps, FC } from 'react';
 
 export const getMuscleFormSchema = (registeredMuscles: Muscle[]) => object({
   id: optional(string()),
-  name: string([
-    minLength(1, '部位の名前を入力してください'),
-    custom(value => registeredMuscles.every(muscle => muscle.name !== value), '部位の名前が重複しています'),
-  ]),
+  name: nonOptional(string([
+    custom(
+      value => registeredMuscles.every(muscle => muscle.name !== value),
+      '部位の名前が重複しています',
+    ),
+  ]), '部位の名前を入力してください'),
+  actionType: string(),
 });
 type Fields = keyof ReturnType<typeof getMuscleFormSchema>['entries'];
 
@@ -31,6 +34,7 @@ type Props = {
 export const MuscleForm: FC<Props> = ({ registeredMuscles, actionType, defaultValues, className, ...props }) => {
   const [form, fields] = useForm({
     onValidate: ({ formData }) => parseWithValibot(formData, { schema: getMuscleFormSchema(registeredMuscles) }),
+    defaultValue: defaultValues,
   });
 
   return (
@@ -42,14 +46,12 @@ export const MuscleForm: FC<Props> = ({ registeredMuscles, actionType, defaultVa
     >
       <input
         {...getInputProps(fields.id, { type: 'hidden' })}
-        defaultValue={defaultValues?.id}
       />
       <fieldset className="grow space-y-2">
         <Label htmlFor={fields.name.id}>名前</Label>
         <Input
           {...getInputProps(fields.name, { type: 'text' })}
           placeholder="例: 大胸筋"
-          defaultValue={defaultValues?.name}
         />
         {fields.name.errors?.map(error => (
           <FormErrorMessage key={error} message={error} />
