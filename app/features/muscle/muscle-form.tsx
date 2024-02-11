@@ -33,6 +33,8 @@ type Props = {
 } & ComponentProps<typeof Form>;
 export const MuscleForm: FC<Props> = ({ registeredMuscles, actionType, defaultValues, className, ...props }) => {
   const [form, fields] = useForm({
+    shouldValidate: 'onBlur',
+    shouldRevalidate: 'onInput',
     onValidate: ({ formData }) => parseWithValibot(formData, { schema: getMuscleFormSchema(registeredMuscles) }),
     defaultValue: defaultValues,
   });
