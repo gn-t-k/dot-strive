@@ -157,6 +157,7 @@ const Page: FC = () => {
           </CardHeader>
           <CardContent>
             <MuscleForm
+              key={Math.random().toString()}
               registeredMuscles={muscles}
               actionType="create"
             />
