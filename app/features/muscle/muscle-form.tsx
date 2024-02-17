@@ -1,4 +1,5 @@
 import { getFormProps, getInputProps, useForm } from '@conform-to/react';
+import * as VisuallyHidden from '@radix-ui/react-visually-hidden';
 import { Form } from '@remix-run/react';
 import { parseWithValibot } from 'conform-to-valibot';
 import { custom, nonOptional, object, optional, string } from 'valibot';
@@ -42,15 +43,17 @@ export const MuscleForm: FC<Props> = ({ registeredMuscles, actionType, defaultVa
   return (
     <Form
       method="post"
-      className={cn('flex-col space-y-4', className)}
+      className={cn('flex space-x-1', className)}
       {...getFormProps(form)}
       {...props}
     >
       <input
         {...getInputProps(fields.id, { type: 'hidden' })}
       />
-      <fieldset className="grow space-y-2">
-        <Label htmlFor={fields.name.id}>名前</Label>
+      <fieldset className="w-full grow">
+        <VisuallyHidden.Root>
+          <Label htmlFor={fields.name.id}>名前</Label>
+        </VisuallyHidden.Root>
         <Input
           {...getInputProps(fields.name, { type: 'text' })}
           placeholder="例: 大胸筋"

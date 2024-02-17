@@ -1,11 +1,11 @@
 import { createId } from '@paralleldrive/cuid2';
 import { json, redirect } from '@remix-run/cloudflare';
-import { Form, useLoaderData, useSearchParams } from '@remix-run/react';
+import { Form, useActionData, useLoaderData, useSearchParams } from '@remix-run/react';
 import { parseWithValibot } from 'conform-to-valibot';
 import { eq } from 'drizzle-orm';
 import { drizzle } from 'drizzle-orm/d1';
-import { Edit, MoreHorizontal, Trash2 } from 'lucide-react';
-import { useCallback } from 'react';
+import { Edit, MoreHorizontal, Trash2, X } from 'lucide-react';
+import { useCallback, useEffect } from 'react';
 
 import { getAuthenticator } from 'app/features/auth/get-authenticator.server';
 import { getMusclesByTraineeId } from 'app/features/muscle/get-muscles-by-trainee-id';
@@ -47,6 +47,15 @@ export const loader = async ({
 const Page: FC = () => {
   const { muscles } = useLoaderData<typeof loader>();
   const [searchParameters, setSearchParameters] = useSearchParams();
+  const actionData = useActionData<typeof action>();
+
+  useEffect(() => {
+    if (actionData?.success) {
+      const parameters = new URLSearchParams();
+      parameters.delete('editing');
+      setSearchParameters(parameters, { preventScrollReset: true });
+    }
+  }, [actionData?.success, setSearchParameters]);
 
   const editing = searchParameters.get('editing');
 
@@ -56,6 +65,7 @@ const Page: FC = () => {
     parameters.set('editing', id);
     setSearchParameters(parameters, { preventScrollReset: true });
   }, [setSearchParameters]);
+
   const onClickCancel = useCallback<MouseEventHandler>((_) => {
     const parameters = new URLSearchParams();
     parameters.delete('editing');
@@ -71,53 +81,57 @@ const Page: FC = () => {
               <li key={muscle.id}>
                 <Card className="relative">
                   <AlertDialog>
-                    <DropdownMenu>
-                      <DropdownMenuTrigger className="absolute right-2 top-2" asChild>
-                        <Button size="icon" variant="ghost">
-                          <MoreHorizontal className="size-4" />
-                        </Button>
-                      </DropdownMenuTrigger>
-                      <DropdownMenuContent align="end">
-                        <DropdownMenuGroup>
-                          <DropdownMenuItem onClick={onClickEdit(muscle.id)}>
-                            <Edit className="mr-2 size-4" />
-                            編集
-                          </DropdownMenuItem>
-                          <DropdownMenuItem>
-                            <AlertDialogTrigger className="flex w-full">
-                              <Trash2 className="mr-2 size-4" />
-                              削除
-                            </AlertDialogTrigger>
-                          </DropdownMenuItem>
-                        </DropdownMenuGroup>
-                      </DropdownMenuContent>
-                    </DropdownMenu>
-                    <CardHeader>
-                      {
-                        editing === muscle.id ? (
-                          <div className="flex items-end space-x-2">
+                    <CardHeader className="flex w-full space-x-2">
+                      <div className="grow">
+                        {
+                          editing === muscle.id ? (
                             <MuscleForm
                               registeredMuscles={muscles}
                               actionType="update"
                               defaultValues={{ id: muscle.id, name: muscle.name }}
-                              className="grow"
                             />
-                            <Button
-                              onClick={onClickCancel}
-                              variant="secondary"
-                              className="grow-0"
-                            >
-                              キャンセル
-                            </Button>
-                          </div>
-                        ) :
-                          <Heading level={2}>{muscle.name}</Heading>
-                      }
+                          ) :
+                            <Heading level={2} className="break-all">{muscle.name}</Heading>
+                        }
+                      </div>
+                      <div className="flex-none">
+                        <DropdownMenu>
+                          {
+                            editing === muscle.id
+                              ? (
+                                <Button onClick={onClickCancel} size="icon" variant="ghost">
+                                  <X className="size-4" onClick={onClickCancel} />
+                                </Button>
+                              )
+                              : (
+                                <DropdownMenuTrigger asChild>
+                                  <Button size="icon" variant="ghost">
+                                    <MoreHorizontal className="size-4" />
+                                  </Button>
+                                </DropdownMenuTrigger>
+                              )
+                          }
+                          <DropdownMenuContent align="end">
+                            <DropdownMenuGroup>
+                              <DropdownMenuItem onClick={onClickEdit(muscle.id)}>
+                                <Edit className="mr-2 size-4" />
+                            編集
+                              </DropdownMenuItem>
+                              <DropdownMenuItem>
+                                <AlertDialogTrigger className="flex w-full">
+                                  <Trash2 className="mr-2 size-4" />
+                              削除
+                                </AlertDialogTrigger>
+                              </DropdownMenuItem>
+                            </DropdownMenuGroup>
+                          </DropdownMenuContent>
+                        </DropdownMenu>
+                      </div>
                     </CardHeader>
-                    <CardContent>
+                    {/* <CardContent>
                       <Heading level={3} size="sm">今週のセット数</Heading>
                       <p>coming soon</p>
-                    </CardContent>
+                    </CardContent> */}
                     <AlertDialogContent>
                       <AlertDialogHeader>
                         <AlertDialogTitle>部位の削除</AlertDialogTitle>
