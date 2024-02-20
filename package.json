@@ -41,7 +41,7 @@
     "remix-auth-google": "2.0.0",
     "tailwind-merge": "2.2.1",
     "tailwindcss-animate": "1.0.7",
-    "valibot": "0.28.1"
+    "valibot": "0.29.0"
   },
   "devDependencies": {
     "@cloudflare/workers-types": "4.20240208.0",
