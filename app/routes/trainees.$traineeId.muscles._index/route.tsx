@@ -1,11 +1,11 @@
 import { createId } from '@paralleldrive/cuid2';
-import { json, redirect } from '@remix-run/cloudflare';
-import { Form, useActionData, useLoaderData, useSearchParams } from '@remix-run/react';
+import { defer, json, redirect } from '@remix-run/cloudflare';
+import { Await, Form, useActionData, useLoaderData, useSearchParams } from '@remix-run/react';
 import { parseWithValibot } from 'conform-to-valibot';
 import { eq } from 'drizzle-orm';
 import { drizzle } from 'drizzle-orm/d1';
 import { Edit, MoreHorizontal, Trash2, X } from 'lucide-react';
-import { useCallback, useEffect } from 'react';
+import { Suspense, useCallback, useEffect } from 'react';
 
 import { getAuthenticator } from 'app/features/auth/get-authenticator.server';
 import { getMusclesByTraineeId } from 'app/features/muscle/get-muscles-by-trainee-id';
@@ -21,6 +21,7 @@ import { muscles as musclesSchema } from 'database/tables/muscles';
 
 import type { ActionFunctionArgs, LoaderFunctionArgs } from '@remix-run/cloudflare';
 import type { FC , MouseEventHandler } from 'react';
+import { MuscleListSkeleton } from './muscle-list-skeleton';
 
 export const loader = async ({
   context,
@@ -39,9 +40,9 @@ export const loader = async ({
 
   const env = context['env'] as Env;
   const database = drizzle(env.DB);
-  const muscles = await getMusclesByTraineeId(database)(params['traineeId']);
+  const muscles = getMusclesByTraineeId(database)(params['traineeId']);
 
-  return json({ muscles });
+  return defer({ muscles })
 };
 
 const Page: FC = () => {
@@ -74,110 +75,116 @@ const Page: FC = () => {
 
   return (
     <Main>
-      <Section>
-        <ul className="inline-flex flex-col justify-start gap-4">
-          {muscles.map(muscle => {
-            return (
-              <li key={muscle.id}>
-                <Card className="relative">
-                  <AlertDialog>
-                    <CardHeader className="flex w-full space-x-2">
-                      <div className="grow">
-                        {
-                          editing === muscle.id ? (
-                            <MuscleForm
-                              registeredMuscles={muscles}
-                              actionType="update"
-                              defaultValues={{ id: muscle.id, name: muscle.name }}
-                            />
-                          ) :
-                            <Heading level={2} className="break-all">{muscle.name}</Heading>
-                        }
-                      </div>
-                      <div className="flex-none">
-                        <DropdownMenu>
-                          {
-                            editing === muscle.id
-                              ? (
-                                <Button onClick={onClickCancel} size="icon" variant="ghost">
-                                  <X className="size-4" onClick={onClickCancel} />
-                                </Button>
-                              )
-                              : (
-                                <DropdownMenuTrigger asChild>
-                                  <Button size="icon" variant="ghost">
-                                    <MoreHorizontal className="size-4" />
-                                  </Button>
-                                </DropdownMenuTrigger>
-                              )
-                          }
-                          <DropdownMenuContent align="end">
-                            <DropdownMenuGroup>
-                              <DropdownMenuItem onClick={onClickEdit(muscle.id)}>
-                                <Edit className="mr-2 size-4" />
-                            編集
-                              </DropdownMenuItem>
-                              <DropdownMenuItem>
-                                <AlertDialogTrigger className="flex w-full">
-                                  <Trash2 className="mr-2 size-4" />
-                              削除
-                                </AlertDialogTrigger>
-                              </DropdownMenuItem>
-                            </DropdownMenuGroup>
-                          </DropdownMenuContent>
-                        </DropdownMenu>
-                      </div>
-                    </CardHeader>
-                    {/* <CardContent>
-                      <Heading level={3} size="sm">今週のセット数</Heading>
-                      <p>coming soon</p>
-                    </CardContent> */}
-                    <AlertDialogContent>
-                      <AlertDialogHeader>
-                        <AlertDialogTitle>部位の削除</AlertDialogTitle>
-                        <AlertDialogDescription>部位を削除しますか？</AlertDialogDescription>
-                      </AlertDialogHeader>
-                      <AlertDialogFooter>
-                        <AlertDialogCancel>キャンセル</AlertDialogCancel>
-                        <Form method="post">
-                          <input
-                            type="hidden"
-                            name="id"
-                            value={muscle.id}
-                          />
-                          <input
-                            type="hidden"
-                            name="name"
-                            value={muscle.name}
-                          />
-                          <AlertDialogAction type="submit" name="actionType" value="delete">
-                            削除
-                          </AlertDialogAction>
-                        </Form>
-                      </AlertDialogFooter>
-                    </AlertDialogContent>
-                  </AlertDialog>
-                </Card>
-              </li>
-            );
-          })}
-        </ul>
-        <Card>
-          <CardHeader>
-            <div className="inline-flex justify-between">
-              <Heading level={2}>部位を登録する</Heading>
-            </div>
-            <CardDescription>.STRIVEでは、各種目に割り当てる部位に名前をつけて管理することができます。</CardDescription>
-          </CardHeader>
-          <CardContent>
-            <MuscleForm
-              key={Math.random().toString()}
-              registeredMuscles={muscles}
-              actionType="create"
-            />
-          </CardContent>
-        </Card>
-      </Section>
+      <Suspense fallback={<MuscleListSkeleton />} >
+        <Await resolve={muscles}>
+          {(muscles) => (
+            <Section>
+              <ul className="inline-flex flex-col justify-start gap-4">
+                {muscles.map(muscle => {
+                  return (
+                    <li key={muscle.id}>
+                      <Card className="relative">
+                        <AlertDialog>
+                          <CardHeader className="flex w-full space-x-2">
+                            <div className="grow">
+                              {
+                                editing === muscle.id ? (
+                                  <MuscleForm
+                                    registeredMuscles={muscles}
+                                    actionType="update"
+                                    defaultValues={{ id: muscle.id, name: muscle.name }}
+                                  />
+                                ) :
+                                  <Heading level={2} className="break-all">{muscle.name}</Heading>
+                              }
+                            </div>
+                            <div className="flex-none">
+                              <DropdownMenu>
+                                {
+                                  editing === muscle.id
+                                    ? (
+                                      <Button onClick={onClickCancel} size="icon" variant="ghost">
+                                        <X className="size-4" onClick={onClickCancel} />
+                                      </Button>
+                                    )
+                                    : (
+                                      <DropdownMenuTrigger asChild>
+                                        <Button size="icon" variant="ghost">
+                                          <MoreHorizontal className="size-4" />
+                                        </Button>
+                                      </DropdownMenuTrigger>
+                                    )
+                                }
+                                <DropdownMenuContent align="end">
+                                  <DropdownMenuGroup>
+                                    <DropdownMenuItem onClick={onClickEdit(muscle.id)}>
+                                      <Edit className="mr-2 size-4" />
+                                      編集
+                                    </DropdownMenuItem>
+                                    <DropdownMenuItem>
+                                      <AlertDialogTrigger className="flex w-full">
+                                        <Trash2 className="mr-2 size-4" />
+                                        削除
+                                      </AlertDialogTrigger>
+                                    </DropdownMenuItem>
+                                  </DropdownMenuGroup>
+                                </DropdownMenuContent>
+                              </DropdownMenu>
+                            </div>
+                          </CardHeader>
+                          {/* <CardContent>
+                            <Heading level={3} size="sm">今週のセット数</Heading>
+                            <p>coming soon</p>
+                          </CardContent> */}
+                          <AlertDialogContent>
+                            <AlertDialogHeader>
+                              <AlertDialogTitle>部位の削除</AlertDialogTitle>
+                              <AlertDialogDescription>部位を削除しますか？</AlertDialogDescription>
+                            </AlertDialogHeader>
+                            <AlertDialogFooter>
+                              <AlertDialogCancel>キャンセル</AlertDialogCancel>
+                              <Form method="post">
+                                <input
+                                  type="hidden"
+                                  name="id"
+                                  value={muscle.id}
+                                />
+                                <input
+                                  type="hidden"
+                                  name="name"
+                                  value={muscle.name}
+                                />
+                                <AlertDialogAction type="submit" name="actionType" value="delete">
+                                  削除
+                                </AlertDialogAction>
+                              </Form>
+                            </AlertDialogFooter>
+                          </AlertDialogContent>
+                        </AlertDialog>
+                      </Card>
+                    </li>
+                  );
+                })}
+              </ul>
+              <Card>
+                <CardHeader>
+                  <div className="inline-flex justify-between">
+                    <Heading level={2}>部位を登録する</Heading>
+                  </div>
+                  <CardDescription>.STRIVEでは、各種目に割り当てる部位に名前をつけて管理することができます。</CardDescription>
+                </CardHeader>
+                <CardContent>
+                  <MuscleForm
+                    key={Math.random().toString()}
+                    registeredMuscles={muscles}
+                    actionType="create"
+                  />
+                </CardContent>
+              </Card>
+            </Section>
+          )}
+        </Await>
+      </Suspense>
     </Main>
   );
 };
