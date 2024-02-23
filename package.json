@@ -34,7 +34,7 @@
     "conform-to-valibot": "1.5.1",
     "drizzle-orm": "0.29.4",
     "isbot": "5.1.0",
-    "lucide-react": "0.336.0",
+    "lucide-react": "0.338.0",
     "react": "18.2.0",
     "react-dom": "18.2.0",
     "remix-auth": "3.6.0",
