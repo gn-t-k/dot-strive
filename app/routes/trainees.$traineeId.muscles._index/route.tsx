@@ -17,11 +17,13 @@ import { DropdownMenu, DropdownMenuContent, DropdownMenuGroup, DropdownMenuItem,
 import { Heading } from 'app/ui/heading';
 import { Main } from 'app/ui/main';
 import { Section } from 'app/ui/section';
+import { useToast } from 'app/ui/use-toast';
 import { muscles as musclesSchema } from 'database/tables/muscles';
+
+import { MuscleListSkeleton } from './muscle-list-skeleton';
 
 import type { ActionFunctionArgs, LoaderFunctionArgs } from '@remix-run/cloudflare';
 import type { FC , MouseEventHandler } from 'react';
-import { MuscleListSkeleton } from './muscle-list-skeleton';
 
 export const loader = async ({
   context,
@@ -42,21 +44,55 @@ export const loader = async ({
   const database = drizzle(env.DB);
   const muscles = getMusclesByTraineeId(database)(params['traineeId']);
 
-  return defer({ muscles })
+  return defer({ muscles });
 };
 
 const Page: FC = () => {
   const { muscles } = useLoaderData<typeof loader>();
   const [searchParameters, setSearchParameters] = useSearchParams();
   const actionData = useActionData<typeof action>();
+  const { toast } = useToast();
 
   useEffect(() => {
-    if (actionData?.success) {
-      const parameters = new URLSearchParams();
-      parameters.delete('editing');
-      setSearchParameters(parameters, { preventScrollReset: true });
+    if (!actionData) {
+      // TODO: エラーハンドリング
+      return;
     }
-  }, [actionData?.success, setSearchParameters]);
+
+    if (actionData.success) {
+      switch (actionData.action) {
+        case 'create': {
+          toast({ title: '部位を登録しました' });
+          break;
+        }
+        case 'update': {
+          searchParameters.delete('editing');
+          setSearchParameters(searchParameters, { preventScrollReset: true });
+          toast({ title: '部位を更新しました' });
+          break;
+        }
+        case 'delete': {
+          toast({ title: '部位を削除しました' });
+          break;
+        }
+      }
+    } else {
+      switch (actionData.action) {
+        case 'create': {
+          toast({ title: '部位の登録に失敗しました', variant: 'destructive' });
+          break;
+        }
+        case 'update': {
+          toast({ title: '部位の更新に失敗しました', variant: 'destructive' });
+          break;
+        }
+        case 'delete': {
+          toast({ title: '部位の削除に失敗しました', variant: 'destructive' });
+          break;
+        }
+      }
+    }
+  }, [actionData, searchParameters, setSearchParameters, toast]);
 
   const editing = searchParameters.get('editing');
 
@@ -75,7 +111,7 @@ const Page: FC = () => {
 
   return (
     <Main>
-      <Suspense fallback={<MuscleListSkeleton />} >
+      <Suspense fallback={<MuscleListSkeleton />}>
         <Await resolve={muscles}>
           {(muscles) => (
             <Section>
@@ -219,25 +255,35 @@ export const action = async ({
       });
       if (submission.status !== 'success') {
         return json({
+          action: 'create',
           success: false,
           submission: submission.reply(),
         });
       }
 
-      await database
-        .insert(musclesSchema)
-        .values({
-          id: createId(),
-          name: submission.value.name,
-          traineeId,
-          createdAt: new Date(),
-          updatedAt: new Date(),
-        });
+      try {
+        await database
+          .insert(musclesSchema)
+          .values({
+            id: createId(),
+            name: submission.value.name,
+            traineeId,
+            createdAt: new Date(),
+            updatedAt: new Date(),
+          });
 
-      return {
-        success: true,
-        submission: submission.reply(),
-      };
+        return {
+          action: 'create',
+          success: true,
+          submission: submission.reply(),
+        };
+      } catch {
+        // TODO: エラーの内容見れるようにする
+        return {
+          action: 'create',
+          success: false,
+        };
+      }
     }
 
     case 'update': {
@@ -253,23 +299,32 @@ export const action = async ({
       });
       if (submission.status !== 'success') {
         return json({
+          action: 'update',
           success: false,
           submission: submission.reply(),
         });
       }
 
-      await database
-        .update(musclesSchema)
-        .set({
-          name: submission.value.name,
-          updatedAt: new Date(),
-        })
-        .where(eq(musclesSchema.id, muscleId));
+      try {
+        await database
+          .update(musclesSchema)
+          .set({
+            name: submission.value.name,
+            updatedAt: new Date(),
+          })
+          .where(eq(musclesSchema.id, muscleId));
 
-      return {
-        success: true,
-        submission: submission.reply(),
-      };
+        return {
+          action: 'update',
+          success: true,
+          submission: submission.reply(),
+        };
+      } catch {
+        return {
+          action: 'update',
+          success: false,
+        };
+      }
     }
 
     case 'delete': {
@@ -278,13 +333,21 @@ export const action = async ({
         throw new Response('Bad Request', { status: 400 });
       }
 
-      await database
-        .delete(musclesSchema)
-        .where(eq(musclesSchema.id, muscleId));
+      try {
+        await database
+          .delete(musclesSchema)
+          .where(eq(musclesSchema.id, muscleId));
 
-      return {
-        success: true,
-      };
+        return {
+          action: 'delete',
+          success: true,
+        };
+      } catch {
+        return {
+          action: 'delete',
+          success: false,
+        };
+      }
     }
 
     default: {
