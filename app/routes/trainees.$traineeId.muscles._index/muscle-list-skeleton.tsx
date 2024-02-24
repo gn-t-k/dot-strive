@@ -1,5 +1,6 @@
-import { Skeleton } from "app/ui/skeleton";
-import { FC } from "react";
+import { Skeleton } from 'app/ui/skeleton';
+
+import type { FC } from 'react';
 
 export const MuscleListSkeleton: FC = () => {
   return (
@@ -29,5 +30,5 @@ export const MuscleListSkeleton: FC = () => {
         <Skeleton className="h-[88px]" />
       </li>
     </ul>
-  )
-}
+  );
+};

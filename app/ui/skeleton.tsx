@@ -1,5 +1,6 @@
-import { cn } from "app/libs/shadcn/utils"
-import { FC, HTMLAttributes } from "react"
+import { cn } from 'app/libs/shadcn/utils';
+
+import type { FC, HTMLAttributes } from 'react';
 
 export const Skeleton: FC<HTMLAttributes<HTMLDivElement>> = ({
   className,
@@ -7,8 +8,8 @@ export const Skeleton: FC<HTMLAttributes<HTMLDivElement>> = ({
 }) => {
   return (
     <div
-      className={cn("animate-pulse rounded-md bg-muted", className)}
+      className={cn('animate-pulse rounded-md bg-muted', className)}
       {...props}
     />
-  )
-}
+  );
+};
