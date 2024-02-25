@@ -5,9 +5,9 @@ import { muscles as musclesSchema } from 'database/tables/muscles';
 import { validateMuscle } from '.';
 
 import type { Muscle } from '.';
-import type { DrizzleD1Database } from 'drizzle-orm/d1';
+import type { Database } from 'database/get-instance';
 
-type GetMusclesByTraineeId = (database: DrizzleD1Database) => (traineeId: string) => Promise<Muscle[]>;
+type GetMusclesByTraineeId = (database: Database) => (traineeId: string) => Promise<Muscle[]>;
 export const getMusclesByTraineeId: GetMusclesByTraineeId = (database) => async (traineeId) => {
   const data = await database
     .select()
