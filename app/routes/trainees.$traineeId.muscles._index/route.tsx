@@ -1,15 +1,15 @@
-import { createId } from '@paralleldrive/cuid2';
 import { defer, json, redirect } from '@remix-run/cloudflare';
 import { Await, Form, useActionData, useLoaderData, useSearchParams } from '@remix-run/react';
 import { parseWithValibot } from 'conform-to-valibot';
-import { eq } from 'drizzle-orm';
-import { drizzle } from 'drizzle-orm/d1';
 import { Edit, MoreHorizontal, Trash2, X } from 'lucide-react';
 import { Suspense, useCallback, useEffect } from 'react';
 
 import { getAuthenticator } from 'app/features/auth/get-authenticator.server';
+import { createMuscle } from 'app/features/muscle/create-muscle';
+import { deleteMuscle } from 'app/features/muscle/delete-muscle';
 import { getMusclesByTraineeId } from 'app/features/muscle/get-muscles-by-trainee-id';
 import { MuscleForm, getMuscleFormSchema } from 'app/features/muscle/muscle-form';
+import { updateMuscle } from 'app/features/muscle/update-muscle';
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from 'app/ui/alert-dialog';
 import { Button } from 'app/ui/button';
 import { Card, CardContent, CardDescription, CardHeader } from 'app/ui/card';
@@ -18,7 +18,7 @@ import { Heading } from 'app/ui/heading';
 import { Main } from 'app/ui/main';
 import { Section } from 'app/ui/section';
 import { useToast } from 'app/ui/use-toast';
-import { muscles as musclesSchema } from 'database/tables/muscles';
+import { getInstance } from 'database/get-instance';
 
 import { MuscleListSkeleton } from './muscle-list-skeleton';
 
@@ -40,8 +40,7 @@ export const loader = async ({
     throw new Response('Not found.', { status: 404 });
   }
 
-  const env = context['env'] as Env;
-  const database = drizzle(env.DB);
+  const database = getInstance(context);
   const muscles = getMusclesByTraineeId(database)(params['traineeId']);
 
   return defer({ muscles });
@@ -231,8 +230,7 @@ export const action = async ({
   request,
   context,
 }: ActionFunctionArgs) => {
-  const env = context['env'] as Env;
-  const database = drizzle(env.DB);
+  const database = getInstance(context);
   const authenticator = getAuthenticator(context);
   const user = await authenticator.isAuthenticated(request);
 
@@ -240,10 +238,10 @@ export const action = async ({
     return redirect('/login');
   }
 
-  if (params['traineeId'] !== user.id) {
+  const traineeId = params['traineeId'];
+  if (traineeId !== user.id) {
     throw new Response('Bad Request1', { status: 400 });
   }
-  const traineeId = params['traineeId'];
 
   const formData = await request.formData();
 
@@ -261,35 +259,31 @@ export const action = async ({
         });
       }
 
-      try {
-        await database
-          .insert(musclesSchema)
-          .values({
-            id: createId(),
-            name: submission.value.name,
-            traineeId,
-            createdAt: new Date(),
-            updatedAt: new Date(),
-          });
-
-        return {
-          action: 'create',
-          success: true,
-          submission: submission.reply(),
-        };
-      } catch {
-        // TODO: エラーの内容見れるようにする
-        return {
+      const createResult = await createMuscle(database)({
+        name: submission.value.name,
+        traineeId,
+      });
+      if (createResult.result === 'failure') {
+        return json({
           action: 'create',
           success: false,
-        };
+        });
       }
+
+      return json({
+        action: 'create',
+        success: true,
+        submission: submission.reply(),
+      });
     }
 
     case 'update': {
       const muscleId = formData.get('id')?.toString();
       if (!muscleId) {
-        throw new Response('Bad Request2', { status: 400 });
+        return json({
+          action: 'update',
+          success: false,
+        });
       }
 
       const muscles = await getMusclesByTraineeId(database)(traineeId);
@@ -305,53 +299,49 @@ export const action = async ({
         });
       }
 
-      try {
-        await database
-          .update(musclesSchema)
-          .set({
-            name: submission.value.name,
-            updatedAt: new Date(),
-          })
-          .where(eq(musclesSchema.id, muscleId));
-
-        return {
-          action: 'update',
-          success: true,
-          submission: submission.reply(),
-        };
-      } catch {
-        return {
+      const updateResult = await updateMuscle(database)({
+        id: muscleId,
+        name: submission.value.name,
+      });
+      if (updateResult.result === 'failure') {
+        return json({
           action: 'update',
           success: false,
-        };
+        });
       }
+
+      return json({
+        action: 'update',
+        success: true,
+        submission: submission.reply(),
+      });
     }
 
     case 'delete': {
       const muscleId = formData.get('id')?.toString();
       if (!muscleId) {
-        throw new Response('Bad Request', { status: 400 });
-      }
-
-      try {
-        await database
-          .delete(musclesSchema)
-          .where(eq(musclesSchema.id, muscleId));
-
-        return {
-          action: 'delete',
-          success: true,
-        };
-      } catch {
-        return {
+        return json({
           action: 'delete',
           success: false,
-        };
+        });
       }
+
+      const deleteResult = await deleteMuscle(database)({ id: muscleId });
+      if (deleteResult.result === 'failure') {
+        return json({
+          action: 'delete',
+          success: false,
+        });
+      }
+
+      return json({
+        action: 'delete',
+        success: true,
+      });
     }
 
     default: {
-      throw new Response('Bad Request3', { status: 400 });
+      throw new Response('Bad Request', { status: 400 });
     }
   }
 };
