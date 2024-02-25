@@ -9,6 +9,7 @@ import {
 } from '@remix-run/react';
 
 import styles from './globals.css';
+import { Toaster } from './ui/toaster';
 
 import type { LinksFunction } from '@remix-run/cloudflare';
 
@@ -36,6 +37,7 @@ const App = () => {
         <ScrollRestoration />
         <Scripts />
         <LiveReload />
+        <Toaster />
       </body>
     </html>
   );
