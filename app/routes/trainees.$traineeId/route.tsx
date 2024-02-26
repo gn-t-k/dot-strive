@@ -1,11 +1,12 @@
 import { json, redirect } from '@remix-run/cloudflare';
-import { Link, Outlet, useLoaderData, useLocation } from '@remix-run/react';
+import { Link, Outlet, useLoaderData, useLocation, useNavigation } from '@remix-run/react';
 
 import { getAuthenticator } from 'app/features/auth/get-authenticator.server';
 import { validateTrainee } from 'app/features/trainee';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from 'app/ui/tabs';
 
 import { HeaderNavigation } from './header-navigation';
+import { MainContentSkeleton } from './main-content-skeleton';
 
 import type { LoaderFunctionArgs } from '@remix-run/cloudflare';
 import type { FC } from 'react';
@@ -38,6 +39,7 @@ const PageWithNavigationHeader: FC = () => {
   const { trainee } = useLoaderData<typeof loader>();
   const { pathname } = useLocation();
   const location = pathname.split('/')[3];
+  const navigation = useNavigation();
 
   return (
     <>
@@ -64,9 +66,13 @@ const PageWithNavigationHeader: FC = () => {
                 </Link>
               </TabsTrigger>
             </TabsList>
-            <TabsContent value={location}>
-              <Outlet />
-            </TabsContent>
+            {navigation.state === 'idle' ? (
+              <TabsContent value={location}>
+                <Outlet />
+              </TabsContent>
+            ) : (
+              <div className="mt-2"><MainContentSkeleton /></div>
+            )}
           </Tabs>
         ) : (
           <Outlet />
