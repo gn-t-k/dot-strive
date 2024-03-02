@@ -1,11 +1,11 @@
-import { json, redirect } from '@remix-run/cloudflare';
+import { json } from '@remix-run/cloudflare';
 import { useActionData, useLoaderData } from '@remix-run/react';
 import { parseWithValibot } from 'conform-to-valibot';
 import { useEffect } from 'react';
 
-import { getAuthenticator } from 'app/features/auth/get-authenticator.server';
 import { getExercisesByTraineeId } from 'app/features/exercise/get-exercises-by-trainee-id';
 import { getMusclesByTraineeId } from 'app/features/muscle/get-muscles-by-trainee-id';
+import { loader as traineeLoader } from 'app/routes/trainees.$traineeId/route';
 import { Main } from 'app/ui/main';
 import { Section } from 'app/ui/section';
 import { getInstance } from 'database/get-instance';
@@ -20,20 +20,11 @@ export const loader = async ({
   request,
   params,
 }: LoaderFunctionArgs) => {
-  const authenticator = getAuthenticator(context);
-  const user = await authenticator.isAuthenticated(request);
-  if(!user) {
-    return redirect('/login');
-  }
-
-  if (params['traineeId'] !== user.id) {
-    throw new Response('Not found.', { status: 404 });
-  }
-
+  const { trainee } = await traineeLoader({ context, request, params }).then(response => response.json());
   const database = getInstance(context);
   const [muscles, exercises] = await Promise.all([
-    getMusclesByTraineeId(database)(params['traineeId']),
-    getExercisesByTraineeId(database)(params['traineeId']),
+    getMusclesByTraineeId(database)(trainee.id),
+    getExercisesByTraineeId(database)(trainee.id),
   ]);
 
   return json({ muscles, exercises });
@@ -69,24 +60,14 @@ export const action = async ({
   context,
 }: ActionFunctionArgs) => {
   const database = getInstance(context);
-  const authenticator = getAuthenticator(context);
-  const user = await authenticator.isAuthenticated(request);
+  const { trainee } = await traineeLoader({ context, request, params }).then(response => response.json());
 
-  if (!user) {
-    return redirect('/login');
-  }
-
-  const traineeId = params['traineeId'];
-  if (traineeId !== user.id) {
-    throw new Response('Bad Request1', { status: 400 });
-  }
-
-  const [muscles, exercises] = await Promise.all([
-    getMusclesByTraineeId(database)(traineeId),
-    getExercisesByTraineeId(database)(traineeId),
+  const [muscles, exercises, formData] = await Promise.all([
+    getMusclesByTraineeId(database)(trainee.id),
+    getExercisesByTraineeId(database)(trainee.id),
+    request.formData(),
   ]);
 
-  const formData = await request.formData();
   const submission = parseWithValibot(formData, {
     schema: getExerciseFormSchema(muscles, exercises),
   });
