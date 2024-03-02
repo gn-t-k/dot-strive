@@ -4,14 +4,13 @@ import { Form } from '@remix-run/react';
 import { parseWithValibot } from 'conform-to-valibot';
 import { custom, nonOptional, object, optional, string } from 'valibot';
 
-import { cn } from 'app/libs/shadcn/utils';
 import { Button } from 'app/ui/button';
 import { FormErrorMessage } from 'app/ui/form-error-message';
 import { Input } from 'app/ui/input';
 import { Label } from 'app/ui/label';
 
-import type { Muscle } from '../../features/muscle';
-import type { ComponentProps, FC } from 'react';
+import type { Muscle } from '../../features/muscle/schema';
+import type { FC } from 'react';
 
 export const getMuscleFormSchema = (registeredMuscles: Muscle[]) => object({
   id: optional(string()),
@@ -23,16 +22,16 @@ export const getMuscleFormSchema = (registeredMuscles: Muscle[]) => object({
   ]), '部位の名前を入力してください'),
   actionType: string(),
 });
-type Fields = keyof ReturnType<typeof getMuscleFormSchema>['entries'];
 
 type Props = {
   registeredMuscles: Muscle[];
   actionType: string;
   defaultValues?: {
-    [key in Fields]?: string
+    id: Muscle['id'];
+    name: Muscle['name'];
   };
-} & ComponentProps<typeof Form>;
-export const MuscleForm: FC<Props> = ({ registeredMuscles, actionType, defaultValues, className, ...props }) => {
+};
+export const MuscleForm: FC<Props> = ({ registeredMuscles, actionType, defaultValues }) => {
   const [form, fields] = useForm({
     shouldValidate: 'onBlur',
     shouldRevalidate: 'onInput',
@@ -43,9 +42,8 @@ export const MuscleForm: FC<Props> = ({ registeredMuscles, actionType, defaultVa
   return (
     <Form
       method="post"
-      className={cn('flex space-x-1', className)}
+      className="flex space-x-1"
       {...getFormProps(form)}
-      {...props}
     >
       <input
         {...getInputProps(fields.id, { type: 'hidden' })}

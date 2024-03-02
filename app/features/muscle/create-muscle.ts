@@ -2,9 +2,9 @@ import { createId } from '@paralleldrive/cuid2';
 
 import { muscles as musclesSchema } from 'database/tables/muscles';
 
-import { validateMuscle } from '.';
+import { validateMuscle } from './schema';
 
-import type { Muscle } from '.';
+import type { Muscle } from './schema';
 import type { Trainee } from '../trainee';
 import type { Database } from 'database/get-instance';
 
