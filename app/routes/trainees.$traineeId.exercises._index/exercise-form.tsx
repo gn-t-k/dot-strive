@@ -54,6 +54,7 @@ export const ExerciseForm: FC<Props> = ({ registeredMuscles, registeredExercises
   return (
     <Form
       method="post"
+      className="flex flex-col space-y-2"
       {...getFormProps(form)}
     >
       <input {...getInputProps(fields.id, { type: 'hidden' })} />
@@ -63,15 +64,16 @@ export const ExerciseForm: FC<Props> = ({ registeredMuscles, registeredExercises
         <FormErrorMessage key={error} message={error} />
       ))}
       <fieldset>
+        <Label>対象の部位</Label>
         {registeredMuscles.map(muscle => (
-          <div key={muscle.id}>
+          <div key={muscle.id} className="flex items-center space-x-1 space-y-1">
             <Checkbox
               id={muscle.id}
               value={muscle.id}
               name={fields.targets.name}
               defaultChecked={defaultValues?.targets.includes(muscle.id) ?? false}
             />
-            <Label htmlFor={muscle.id}>{muscle.name}</Label>
+            <Label htmlFor={muscle.id} className="font-medium">{muscle.name}</Label>
           </div>
         ))}
       </fieldset>

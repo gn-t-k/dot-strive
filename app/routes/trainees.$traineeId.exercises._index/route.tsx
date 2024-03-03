@@ -3,9 +3,13 @@ import { useActionData, useLoaderData } from '@remix-run/react';
 import { parseWithValibot } from 'conform-to-valibot';
 import { useEffect } from 'react';
 
+import { createExercise } from 'app/features/exercise/create-exercise';
 import { getExercisesByTraineeId } from 'app/features/exercise/get-exercises-by-trainee-id';
+import { getExercisesWithTargetsByTraineeId } from 'app/features/exercise/get-exercises-with-targets-by-trainee-id';
 import { getMusclesByTraineeId } from 'app/features/muscle/get-muscles-by-trainee-id';
 import { loader as traineeLoader } from 'app/routes/trainees.$traineeId/route';
+import { Card, CardContent, CardDescription, CardHeader } from 'app/ui/card';
+import { Heading } from 'app/ui/heading';
 import { Main } from 'app/ui/main';
 import { Section } from 'app/ui/section';
 import { getInstance } from 'database/get-instance';
@@ -22,16 +26,17 @@ export const loader = async ({
 }: LoaderFunctionArgs) => {
   const { trainee } = await traineeLoader({ context, request, params }).then(response => response.json());
   const database = getInstance(context);
-  const [muscles, exercises] = await Promise.all([
+  const [muscles, exercisesWithTargets] = await Promise.all([
     getMusclesByTraineeId(database)(trainee.id),
-    getExercisesByTraineeId(database)(trainee.id),
+    getExercisesWithTargetsByTraineeId(database)(trainee.id),
   ]);
 
-  return json({ muscles, exercises });
+  return json({ muscles, exercisesWithTargets });
 };
 
 const Page: FC = () => {
-  const { muscles, exercises } = useLoaderData<typeof loader>();
+  const { muscles, exercisesWithTargets } = useLoaderData<typeof loader>();
+  const exercises = exercisesWithTargets.map(data => data.exercise);
   const actionData = useActionData<typeof action>();
   useEffect(() => {
     console.log({ actionData });
@@ -41,13 +46,21 @@ const Page: FC = () => {
     <Main>
       <Section>
         <ul>
-          {exercises.map(exercise => (<li key={exercise.id}>{exercise.name}</li>))}
+          {JSON.stringify(exercisesWithTargets)}
         </ul>
-        <ExerciseForm
-          registeredMuscles={muscles}
-          registeredExercises={exercises}
-          actionType="create"
-        />
+        <Card>
+          <CardHeader>
+            <Heading level={2}>種目を登録する</Heading>
+            <CardDescription>.STRIVEでは、種目に名前と対象の部位を設定することが出来ます。</CardDescription>
+          </CardHeader>
+          <CardContent>
+            <ExerciseForm
+              registeredMuscles={muscles}
+              registeredExercises={exercises}
+              actionType="create"
+            />
+          </CardContent>
+        </Card>
       </Section>
     </Main>
   );
@@ -68,13 +81,39 @@ export const action = async ({
     request.formData(),
   ]);
 
-  const submission = parseWithValibot(formData, {
-    schema: getExerciseFormSchema(muscles, exercises),
-  });
+  switch (formData.get('actionType')) {
+    case 'create': {
+      const submission = parseWithValibot(formData, {
+        schema: getExerciseFormSchema(muscles, exercises),
+      });
+      if(submission.status !== 'success') {
+        return json({
+          action: 'create',
+          success: false,
+          submission: submission.reply(),
+        });
+      }
 
-  return json({
-    action: formData.get('actionType'),
-    success: true,
-    submission: submission.reply(),
-  });
+      const createResult = await createExercise(database)({
+        name: submission.value.name,
+        muscleIds: submission.value.targets,
+        traineeId: trainee.id,
+      });
+      if (createResult.result === 'failure') {
+        return json({
+          action: 'create',
+          success: false,
+        });
+      }
+
+      return json({
+        action: 'create',
+        success: true,
+        submission: submission.reply(),
+      });
+    }
+    default: {
+      throw new Response('Bad Request', { status: 400 });
+    }
+  }
 };
