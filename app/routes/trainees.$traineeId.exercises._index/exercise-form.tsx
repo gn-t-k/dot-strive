@@ -29,6 +29,7 @@ export const getExerciseFormSchema = (
       minLength(1),
       custom(value => registeredMuscles.some(muscle => muscle.id === value)),
     ]),
+    // FIXME: なんか選んでるのにエラー出る（そのまま通る）
     [minLength(1, '対象の部位を選択してください')]),
   actionType: string(),
 });

@@ -5,8 +5,10 @@ import { Edit, MoreHorizontal, Trash2 } from 'lucide-react';
 import { useEffect } from 'react';
 
 import { createExercise } from 'app/features/exercise/create-exercise';
+import { deleteExercise } from 'app/features/exercise/delete-exercise';
 import { getExercisesByTraineeId } from 'app/features/exercise/get-exercises-by-trainee-id';
 import { getExercisesWithTargetsByTraineeId } from 'app/features/exercise/get-exercises-with-targets-by-trainee-id';
+import { updateExercise } from 'app/features/exercise/update-exercise';
 import { getMusclesByTraineeId } from 'app/features/muscle/get-muscles-by-trainee-id';
 import { loader as traineeLoader } from 'app/routes/trainees.$traineeId/route';
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from 'app/ui/alert-dialog';
@@ -17,6 +19,7 @@ import { DropdownMenu, DropdownMenuContent, DropdownMenuGroup, DropdownMenuItem,
 import { Heading } from 'app/ui/heading';
 import { Main } from 'app/ui/main';
 import { Section } from 'app/ui/section';
+import { useToast } from 'app/ui/use-toast';
 import { getInstance } from 'database/get-instance';
 
 import { ExerciseForm, getExerciseFormSchema } from './exercise-form';
@@ -42,9 +45,37 @@ export const loader = async ({
 const Page: FC = () => {
   const { muscles, exercisesWithTargets } = useLoaderData<typeof loader>();
   const actionData = useActionData<typeof action>();
+  const { toast } = useToast();
+
   useEffect(() => {
-    console.log({ actionData });
-  }, [actionData]);
+    if (!actionData) {
+      return;
+    }
+    switch (actionData.action) {
+      case 'create': {
+        toast({
+          title: actionData.success ? '部位を登録しました' : '部位の登録に失敗しました',
+          variant: actionData.success ? 'default' : 'destructive',
+        });
+        break;
+      }
+      case 'update': {
+        toast ({
+          title: actionData.success ? '部位を更新しました' : '部位の更新に失敗しました',
+          variant: actionData.success ? 'default' : 'destructive',
+        });
+        break;
+      }
+      case 'delete': {
+        toast({
+          title: actionData.success ? '部位を削除しました' : '部位の削除に失敗しました',
+          variant: actionData.success ? 'default' : 'destructive',
+        });
+        toast({ title: '部位を削除しました' });
+        break;
+      }
+    }
+  }, [actionData, toast]);
 
   const exercises = exercisesWithTargets.map(data => data.exercise);
 
@@ -114,11 +145,6 @@ const Page: FC = () => {
                                   name="id"
                                   value={exercise.id}
                                 />
-                                <input
-                                  type="hidden"
-                                  name="name"
-                                  value={exercise.name}
-                                />
                                 <AlertDialogAction type="submit" name="actionType" value="delete" className="w-full">
                                   削除
                                 </AlertDialogAction>
@@ -159,16 +185,18 @@ export const action = async ({
   context,
 }: ActionFunctionArgs) => {
   const database = getInstance(context);
-  const { trainee } = await traineeLoader({ context, request, params }).then(response => response.json());
-
-  const [registeredMuscles, registeredExercises, formData] = await Promise.all([
-    getMusclesByTraineeId(database)(trainee.id),
-    getExercisesByTraineeId(database)(trainee.id),
+  const [{ trainee }, formData] = await Promise.all([
+    traineeLoader({ context, request, params }).then(response => response.json()),
     request.formData(),
   ]);
 
   switch (formData.get('actionType')) {
     case 'create': {
+      const [registeredMuscles, registeredExercises] = await Promise.all([
+        getMusclesByTraineeId(database)(trainee.id),
+        getExercisesByTraineeId(database)(trainee.id),
+      ]);
+
       const submission = parseWithValibot(formData, {
         schema: getExerciseFormSchema({ registeredMuscles, registeredExercises, beforeName: null }),
       });
@@ -196,6 +224,72 @@ export const action = async ({
         action: 'create',
         success: true,
         submission: submission.reply(),
+      });
+    }
+    case 'update': {
+      const [registeredMuscles, registeredExercises] = await Promise.all([
+        getMusclesByTraineeId(database)(trainee.id),
+        getExercisesByTraineeId(database)(trainee.id),
+      ]);
+
+      const exerciseId = formData.get('id')?.toString();
+      if (!exerciseId) {
+        return json({
+          action: 'update',
+          success: false,
+        });
+      }
+
+      const beforeName = registeredExercises.find(exercise => exercise.id === exerciseId)?.name ?? null;
+      const submission = parseWithValibot(formData, {
+        schema: getExerciseFormSchema({ registeredMuscles, registeredExercises, beforeName }),
+      });
+      if (submission.status !== 'success') {
+        return json({
+          action: 'update',
+          success: false,
+          submission: submission.reply(),
+        });
+      }
+
+      const updateResult = await updateExercise(database)({
+        id: exerciseId,
+        name: submission.value.name,
+        targets: submission.value.targets,
+      });
+      if (updateResult.result === 'failure') {
+        return json({
+          action: 'update',
+          success: false,
+        });
+      }
+
+      return json({
+        action: 'update',
+        success: true,
+        submission: submission.reply(),
+      });
+    }
+    case 'delete': {
+      const exerciseId = formData.get('id')?.toString();
+      if (!exerciseId) {
+        return json({
+          action: 'delete',
+          success: false,
+        });
+      }
+
+      const deleteResult = await deleteExercise(database)({ id: exerciseId });
+      if (deleteResult.result === 'failure') {
+        return json({
+          action: 'delete',
+          success: false,
+        });
+      }
+
+      return json({
+        action: 'delete',
+        success: true,
       });
     }
     default: {

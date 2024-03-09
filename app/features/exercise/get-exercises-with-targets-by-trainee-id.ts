@@ -1,4 +1,4 @@
-import { eq, sql } from 'drizzle-orm';
+import { desc, eq, sql } from 'drizzle-orm';
 
 import { exercises as exercisesSchema } from 'database/tables/exercises';
 import { muscleExerciseMappings } from 'database/tables/muscle-exercise-mappings';
@@ -25,7 +25,8 @@ export const getExercisesWithTargetsByTraineeId: GetExercisesWithTargetsByTraine
     .from(exercisesSchema)
     .innerJoin(muscleExerciseMappings, eq(exercisesSchema.id, muscleExerciseMappings.exerciseId))
     .innerJoin(musclesSchema, eq(muscleExerciseMappings.muscleId, musclesSchema.id))
-    .where(eq(exercisesSchema.traineeId, traineeId));
+    .where(eq(exercisesSchema.traineeId, traineeId))
+    .orderBy(desc(exercisesSchema.createdAt));
 
   return data.reduce((accumulator: Payload, { exerciseId, exerciseName, muscleId, muscleName }) => {
     const exercise = validateExercise({ id: exerciseId, name: exerciseName });

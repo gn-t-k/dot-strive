@@ -150,11 +150,6 @@ const Page: FC = () => {
                                       name="id"
                                       value={muscle.id}
                                     />
-                                    <input
-                                      type="hidden"
-                                      name="name"
-                                      value={muscle.name}
-                                    />
                                     <AlertDialogAction type="submit" name="actionType" value="delete" className="w-full">
                                       削除
                                     </AlertDialogAction>
@@ -244,7 +239,6 @@ export const action = async ({
 
       const registeredMuscles = await getMusclesByTraineeId(database)(trainee.id);
       const beforeName = registeredMuscles.find(muscle => muscle.id === muscleId)?.name ?? null;
-
       const submission = parseWithValibot(formData, {
         schema: getMuscleFormSchema({ registeredMuscles, beforeName }),
       });
