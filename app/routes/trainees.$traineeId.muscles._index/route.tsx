@@ -1,8 +1,8 @@
 import { json } from '@remix-run/cloudflare';
-import { Form, useActionData, useLoaderData, useSearchParams } from '@remix-run/react';
+import { Form, useActionData, useLoaderData } from '@remix-run/react';
 import { parseWithValibot } from 'conform-to-valibot';
 import { Edit, MoreHorizontal, Trash2, X } from 'lucide-react';
-import { useCallback, useEffect } from 'react';
+import { useCallback, useEffect, useState } from 'react';
 
 import { createMuscle } from 'app/features/muscle/create-muscle';
 import { deleteMuscle } from 'app/features/muscle/delete-muscle';
@@ -37,7 +37,7 @@ export const loader = async ({
 
 const Page: FC = () => {
   const { muscles } = useLoaderData<typeof loader>();
-  const [searchParameters, setSearchParameters] = useSearchParams();
+  const [editing, setEditing] = useState<string | undefined>();
   const actionData = useActionData<typeof action>();
   const { toast } = useToast();
 
@@ -54,8 +54,6 @@ const Page: FC = () => {
         break;
       }
       case 'update': {
-        searchParameters.delete('editing');
-        setSearchParameters(searchParameters, { preventScrollReset: true });
         toast ({
           title: actionData.success ? '部位を更新しました' : '部位の更新に失敗しました',
           variant: actionData.success ? 'default' : 'destructive',
@@ -67,31 +65,26 @@ const Page: FC = () => {
           title: actionData.success ? '部位を削除しました' : '部位の削除に失敗しました',
           variant: actionData.success ? 'default' : 'destructive',
         });
-        toast({ title: '部位を削除しました' });
         break;
       }
     }
-  }, [actionData, searchParameters, setSearchParameters, toast]);
+  }, [actionData, toast]);
 
   type OnClickEdit = (id: string) => MouseEventHandler;
   const onClickEdit = useCallback<OnClickEdit>((id) => (_) => {
-    searchParameters.set('editing', id);
-    setSearchParameters(searchParameters, { preventScrollReset: true });
-  }, [searchParameters, setSearchParameters]);
+    setEditing(id);
+  }, []);
 
   const onClickCancel = useCallback<MouseEventHandler>((_) => {
-    searchParameters.delete('editing');
-    setSearchParameters(searchParameters, { preventScrollReset: true });
-  }, [searchParameters, setSearchParameters]);
-
-  const editingParameter = searchParameters.get('editing');
+    setEditing(undefined);
+  }, []);
 
   return (
     <Main>
       <Section>
         <ul className="flex flex-col gap-4">
           {muscles.map(muscle => {
-            const isEditing = editingParameter === muscle.id;
+            const isEditing = editing === muscle.id;
 
             return (
               <li key={muscle.id}>
