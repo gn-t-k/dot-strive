@@ -89,7 +89,7 @@ const Page: FC = () => {
   return (
     <Main>
       <Section>
-        <ul className="inline-flex flex-col justify-start gap-4">
+        <ul className="flex flex-col gap-4">
           {muscles.map(muscle => {
             const isEditing = editingParameter === muscle.id;
 
@@ -112,7 +112,7 @@ const Page: FC = () => {
                       {isEditing
                         ? (
                           <Button onClick={onClickCancel} size="icon" variant="ghost">
-                            <X className="size-4" onClick={onClickCancel} />
+                            <X className="size-4" />
                           </Button>
                         )
                         : (
@@ -149,11 +149,6 @@ const Page: FC = () => {
                                       type="hidden"
                                       name="id"
                                       value={muscle.id}
-                                    />
-                                    <input
-                                      type="hidden"
-                                      name="name"
-                                      value={muscle.name}
                                     />
                                     <AlertDialogAction type="submit" name="actionType" value="delete" className="w-full">
                                       削除
@@ -203,9 +198,9 @@ export const action = async ({
 
   switch (formData.get('actionType')) {
     case 'create': {
-      const muscles = await getMusclesByTraineeId(database)(trainee.id);
+      const registeredMuscles = await getMusclesByTraineeId(database)(trainee.id);
       const submission = parseWithValibot(formData, {
-        schema: getMuscleFormSchema(muscles),
+        schema: getMuscleFormSchema({ registeredMuscles, beforeName: null }),
       });
       if (submission.status !== 'success') {
         return json({
@@ -242,10 +237,10 @@ export const action = async ({
         });
       }
 
-      const muscles = await getMusclesByTraineeId(database)(trainee.id);
-
+      const registeredMuscles = await getMusclesByTraineeId(database)(trainee.id);
+      const beforeName = registeredMuscles.find(muscle => muscle.id === muscleId)?.name ?? null;
       const submission = parseWithValibot(formData, {
-        schema: getMuscleFormSchema(muscles),
+        schema: getMuscleFormSchema({ registeredMuscles, beforeName }),
       });
       if (submission.status !== 'success') {
         return json({

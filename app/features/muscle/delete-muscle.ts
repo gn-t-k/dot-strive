@@ -1,5 +1,6 @@
 import { eq } from 'drizzle-orm';
 
+import { muscleExerciseMappings as muscleExerciseMappingsSchema } from 'database/tables/muscle-exercise-mappings';
 import { muscles as musclesSchema } from 'database/tables/muscles';
 
 import { validateMuscle } from './schema';
@@ -13,6 +14,10 @@ type DeleteMuscle = (database: Database) => (props: { id: Muscle['id'] }) => Pro
 >;
 export const deleteMuscle: DeleteMuscle = (database) => async ({ id }) => {
   try {
+    // TODO: transaction
+    await database
+      .delete(muscleExerciseMappingsSchema)
+      .where(eq(muscleExerciseMappingsSchema.muscleId, id));
     const data = await database
       .delete(musclesSchema)
       .where(eq(musclesSchema.id, id))
