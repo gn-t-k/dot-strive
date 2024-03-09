@@ -1,14 +1,14 @@
-import { json, redirect } from '@remix-run/cloudflare';
+import { json } from '@remix-run/cloudflare';
 import { Form, useActionData, useLoaderData, useSearchParams } from '@remix-run/react';
 import { parseWithValibot } from 'conform-to-valibot';
 import { Edit, MoreHorizontal, Trash2, X } from 'lucide-react';
 import { useCallback, useEffect } from 'react';
 
-import { getAuthenticator } from 'app/features/auth/get-authenticator.server';
 import { createMuscle } from 'app/features/muscle/create-muscle';
 import { deleteMuscle } from 'app/features/muscle/delete-muscle';
 import { getMusclesByTraineeId } from 'app/features/muscle/get-muscles-by-trainee-id';
 import { updateMuscle } from 'app/features/muscle/update-muscle';
+import { loader as traineeLoader } from 'app/routes/trainees.$traineeId/route';
 import { MuscleForm, getMuscleFormSchema } from 'app/routes/trainees.$traineeId.muscles._index/muscle-form';
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from 'app/ui/alert-dialog';
 import { Button } from 'app/ui/button';
@@ -28,18 +28,9 @@ export const loader = async ({
   request,
   params,
 }: LoaderFunctionArgs) => {
-  const authenticator = getAuthenticator(context);
-  const user = await authenticator.isAuthenticated(request);
-  if (!user) {
-    return redirect('/login');
-  }
-
-  if (params['traineeId'] !== user.id) {
-    throw new Response('Not found.', { status: 404 });
-  }
-
+  const { trainee } = await traineeLoader({ context, request, params }).then(response => response.json());
   const database = getInstance(context);
-  const muscles = await getMusclesByTraineeId(database)(params['traineeId']);
+  const muscles = await getMusclesByTraineeId(database)(trainee.id);
 
   return json({ muscles });
 };
@@ -98,7 +89,7 @@ const Page: FC = () => {
   return (
     <Main>
       <Section>
-        <ul className="inline-flex flex-col justify-start gap-4">
+        <ul className="flex flex-col gap-4">
           {muscles.map(muscle => {
             const isEditing = editingParameter === muscle.id;
 
@@ -121,7 +112,7 @@ const Page: FC = () => {
                       {isEditing
                         ? (
                           <Button onClick={onClickCancel} size="icon" variant="ghost">
-                            <X className="size-4" onClick={onClickCancel} />
+                            <X className="size-4" />
                           </Button>
                         )
                         : (
@@ -152,22 +143,17 @@ const Page: FC = () => {
                                   <AlertDialogDescription>部位を削除しますか？</AlertDialogDescription>
                                 </AlertDialogHeader>
                                 <AlertDialogFooter>
+                                  <AlertDialogCancel>キャンセル</AlertDialogCancel>
                                   <Form method="post">
                                     <input
                                       type="hidden"
                                       name="id"
                                       value={muscle.id}
                                     />
-                                    <input
-                                      type="hidden"
-                                      name="name"
-                                      value={muscle.name}
-                                    />
                                     <AlertDialogAction type="submit" name="actionType" value="delete" className="w-full">
                                       削除
                                     </AlertDialogAction>
                                   </Form>
-                                  <AlertDialogCancel>キャンセル</AlertDialogCancel>
                                 </AlertDialogFooter>
                               </AlertDialogContent>
                             </AlertDialog>
@@ -205,25 +191,16 @@ export const action = async ({
   context,
 }: ActionFunctionArgs) => {
   const database = getInstance(context);
-  const authenticator = getAuthenticator(context);
-  const user = await authenticator.isAuthenticated(request);
-
-  if (!user) {
-    return redirect('/login');
-  }
-
-  const traineeId = params['traineeId'];
-  if (traineeId !== user.id) {
-    throw new Response('Bad Request1', { status: 400 });
-  }
-
-  const formData = await request.formData();
+  const [{ trainee }, formData] = await Promise.all([
+    traineeLoader({ context, request, params }).then(response => response.json()),
+    request.formData(),
+  ]);
 
   switch (formData.get('actionType')) {
     case 'create': {
-      const muscles = await getMusclesByTraineeId(database)(traineeId);
+      const registeredMuscles = await getMusclesByTraineeId(database)(trainee.id);
       const submission = parseWithValibot(formData, {
-        schema: getMuscleFormSchema(muscles),
+        schema: getMuscleFormSchema({ registeredMuscles, beforeName: null }),
       });
       if (submission.status !== 'success') {
         return json({
@@ -235,7 +212,7 @@ export const action = async ({
 
       const createResult = await createMuscle(database)({
         name: submission.value.name,
-        traineeId,
+        traineeId: trainee.id,
       });
       if (createResult.result === 'failure') {
         return json({
@@ -260,10 +237,10 @@ export const action = async ({
         });
       }
 
-      const muscles = await getMusclesByTraineeId(database)(traineeId);
-
+      const registeredMuscles = await getMusclesByTraineeId(database)(trainee.id);
+      const beforeName = registeredMuscles.find(muscle => muscle.id === muscleId)?.name ?? null;
       const submission = parseWithValibot(formData, {
-        schema: getMuscleFormSchema(muscles),
+        schema: getMuscleFormSchema({ registeredMuscles, beforeName }),
       });
       if (submission.status !== 'success') {
         return json({

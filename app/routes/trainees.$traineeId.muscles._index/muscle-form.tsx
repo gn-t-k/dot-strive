@@ -4,48 +4,50 @@ import { Form } from '@remix-run/react';
 import { parseWithValibot } from 'conform-to-valibot';
 import { custom, nonOptional, object, optional, string } from 'valibot';
 
-import { cn } from 'app/libs/shadcn/utils';
 import { Button } from 'app/ui/button';
 import { FormErrorMessage } from 'app/ui/form-error-message';
 import { Input } from 'app/ui/input';
 import { Label } from 'app/ui/label';
 
-import type { Muscle } from '../../features/muscle';
-import type { ComponentProps, FC } from 'react';
+import type { Muscle } from '../../features/muscle/schema';
+import type { FC } from 'react';
 
-export const getMuscleFormSchema = (registeredMuscles: Muscle[]) => object({
+export const getMuscleFormSchema = (
+  { registeredMuscles, beforeName }
+  : { registeredMuscles: Muscle[]; beforeName: string | null },
+) => object({
   id: optional(string()),
   name: nonOptional(string([
     custom(
-      value => registeredMuscles.every(muscle => muscle.name !== value),
+      value => registeredMuscles.every(muscle => muscle.name !== value) || value === beforeName,
       '部位の名前が重複しています',
     ),
   ]), '部位の名前を入力してください'),
   actionType: string(),
 });
-type Fields = keyof ReturnType<typeof getMuscleFormSchema>['entries'];
 
 type Props = {
   registeredMuscles: Muscle[];
   actionType: string;
   defaultValues?: {
-    [key in Fields]?: string
+    id: Muscle['id'];
+    name: Muscle['name'];
   };
-} & ComponentProps<typeof Form>;
-export const MuscleForm: FC<Props> = ({ registeredMuscles, actionType, defaultValues, className, ...props }) => {
+};
+export const MuscleForm: FC<Props> = ({ registeredMuscles, actionType, defaultValues }) => {
+  const beforeName = defaultValues?.name ?? null;
   const [form, fields] = useForm({
     shouldValidate: 'onBlur',
     shouldRevalidate: 'onInput',
-    onValidate: ({ formData }) => parseWithValibot(formData, { schema: getMuscleFormSchema(registeredMuscles) }),
+    onValidate: ({ formData }) => parseWithValibot(formData, { schema: getMuscleFormSchema({ registeredMuscles, beforeName }) }),
     defaultValue: defaultValues,
   });
 
   return (
     <Form
       method="post"
-      className={cn('flex space-x-1', className)}
+      className="flex space-x-1"
       {...getFormProps(form)}
-      {...props}
     >
       <input
         {...getInputProps(fields.id, { type: 'hidden' })}
