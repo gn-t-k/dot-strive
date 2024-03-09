@@ -1,4 +1,4 @@
-import { eq } from 'drizzle-orm';
+import { eq, sql } from 'drizzle-orm';
 
 import { exercises as exercisesSchema } from 'database/tables/exercises';
 import { muscleExerciseMappings } from 'database/tables/muscle-exercise-mappings';
@@ -17,22 +17,16 @@ type Payload = { exercise: Exercise; targets: Muscle[] }[];
 export const getExercisesWithTargetsByTraineeId: GetExercisesWithTargetsByTraineeId = (database) => async (traineeId) => {
   const data = await database
     .select({
-      exerciseId: exercisesSchema.id,
-      exerciseName: exercisesSchema.name,
-      muscleId: musclesSchema.id,
-      muscleName: musclesSchema.name,
+      exerciseId: sql`${exercisesSchema.id}`.as('exerciseId'),
+      exerciseName: sql`${exercisesSchema.name}`.as('exerciseName'),
+      muscleId: sql`${musclesSchema.id}`.as('muscleId'),
+      muscleName: sql`${musclesSchema.name}`.as('muscleName'),
     })
     .from(exercisesSchema)
     .innerJoin(muscleExerciseMappings, eq(exercisesSchema.id, muscleExerciseMappings.exerciseId))
     .innerJoin(musclesSchema, eq(muscleExerciseMappings.muscleId, musclesSchema.id))
     .where(eq(exercisesSchema.traineeId, traineeId));
 
-  const [muscles, exercises, mappings] = await Promise.all([
-    database.select().from(musclesSchema),
-    database.select().from(exercisesSchema),
-    database.select().from(muscleExerciseMappings),
-  ]);
-  console.log({ muscles, exercises, mappings, data });
   return data.reduce((accumulator: Payload, { exerciseId, exerciseName, muscleId, muscleName }) => {
     const exercise = validateExercise({ id: exerciseId, name: exerciseName });
     const muscle = validateMuscle({ id: muscleId, name: muscleName });

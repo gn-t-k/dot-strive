@@ -13,11 +13,14 @@ import type { Exercise } from 'app/features/exercise';
 import type { Muscle } from 'app/features/muscle/schema';
 import type { FC } from 'react';
 
-export const getExerciseFormSchema = (registeredMuscles: Muscle[], registeredExercises: Exercise[]) => object({
+export const getExerciseFormSchema = (
+  { registeredMuscles, registeredExercises, beforeName }
+  : { registeredMuscles: Muscle[]; registeredExercises: Exercise[]; beforeName: string | null },
+) => object({
   id: optional(string()),
   name: nonOptional(string([
     custom(
-      value => registeredExercises.every(exercise => exercise.name !== value),
+      value => registeredExercises.every(exercise => exercise.name !== value) || value === beforeName,
       '種目の名前が重複しています',
     ),
   ]), '種目の名前を入力してください'),
@@ -41,12 +44,12 @@ type Props = {
   };
 };
 export const ExerciseForm: FC<Props> = ({ registeredMuscles, registeredExercises, actionType, defaultValues }) => {
+  const beforeName = defaultValues?.name ?? null;
   const [form, fields] = useForm({
     shouldValidate: 'onBlur',
     shouldRevalidate: 'onInput',
     onValidate: ({ formData }) => {
-      console.log({ formData: formData.get('targets') });
-      return parseWithValibot(formData, { schema: getExerciseFormSchema(registeredMuscles, registeredExercises) });
+      return parseWithValibot(formData, { schema: getExerciseFormSchema({ registeredMuscles, registeredExercises, beforeName }) });
     },
     defaultValue: defaultValues,
   });
@@ -54,32 +57,37 @@ export const ExerciseForm: FC<Props> = ({ registeredMuscles, registeredExercises
   return (
     <Form
       method="post"
-      className="flex flex-col space-y-2"
+      className="flex flex-col space-y-3"
       {...getFormProps(form)}
     >
       <input {...getInputProps(fields.id, { type: 'hidden' })} />
-      <Label htmlFor={fields.name.id}>名前</Label>
-      <Input {...getInputProps(fields.name, { type: 'text' })} />
-      {fields.name.errors?.map(error => (
-        <FormErrorMessage key={error} message={error} />
-      ))}
-      <fieldset>
-        <Label>対象の部位</Label>
-        {registeredMuscles.map(muscle => (
-          <div key={muscle.id} className="flex items-center space-x-1 space-y-1">
-            <Checkbox
-              id={muscle.id}
-              value={muscle.id}
-              name={fields.targets.name}
-              defaultChecked={defaultValues?.targets.includes(muscle.id) ?? false}
-            />
-            <Label htmlFor={muscle.id} className="font-medium">{muscle.name}</Label>
-          </div>
+      <fieldset className="space-y-2">
+        <Label htmlFor={fields.name.id}>名前</Label>
+        <Input {...getInputProps(fields.name, { type: 'text' })} />
+        {fields.name.errors?.map(error => (
+          <FormErrorMessage key={error} message={error} />
         ))}
       </fieldset>
-      {fields.targets.errors?.map(error => (
-        <FormErrorMessage key={error} message={error} />
-      ))}
+      <fieldset className="space-y-2">
+        <Label>対象の部位</Label>
+        {registeredMuscles.map(muscle => {
+          const id = (defaultValues?.id ?? 'new') + muscle.id;
+          return (
+            <div key={muscle.id} className="flex items-center space-x-1">
+              <Checkbox
+                id={id}
+                value={muscle.id}
+                name={fields.targets.name}
+                defaultChecked={defaultValues?.targets.includes(muscle.id) ?? false}
+              />
+              <Label htmlFor={id} className="font-medium">{muscle.name}</Label>
+            </div>
+          );
+        })}
+        {fields.targets.errors?.map(error => (
+          <FormErrorMessage key={error} message={error} />
+        ))}
+      </fieldset>
       <Button
         type="submit"
         name="actionType"

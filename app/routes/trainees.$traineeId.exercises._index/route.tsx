@@ -1,6 +1,7 @@
 import { json } from '@remix-run/cloudflare';
-import { useActionData, useLoaderData } from '@remix-run/react';
+import { Form, useActionData, useLoaderData } from '@remix-run/react';
 import { parseWithValibot } from 'conform-to-valibot';
+import { Edit, MoreHorizontal, Trash2 } from 'lucide-react';
 import { useEffect } from 'react';
 
 import { createExercise } from 'app/features/exercise/create-exercise';
@@ -8,7 +9,11 @@ import { getExercisesByTraineeId } from 'app/features/exercise/get-exercises-by-
 import { getExercisesWithTargetsByTraineeId } from 'app/features/exercise/get-exercises-with-targets-by-trainee-id';
 import { getMusclesByTraineeId } from 'app/features/muscle/get-muscles-by-trainee-id';
 import { loader as traineeLoader } from 'app/routes/trainees.$traineeId/route';
+import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from 'app/ui/alert-dialog';
+import { Button } from 'app/ui/button';
 import { Card, CardContent, CardDescription, CardHeader } from 'app/ui/card';
+import { Dialog, DialogClose, DialogContent, DialogFooter, DialogHeader, DialogTitle, DialogTrigger } from 'app/ui/dialog';
+import { DropdownMenu, DropdownMenuContent, DropdownMenuGroup, DropdownMenuItem, DropdownMenuTrigger } from 'app/ui/dropdown-menu';
 import { Heading } from 'app/ui/heading';
 import { Main } from 'app/ui/main';
 import { Section } from 'app/ui/section';
@@ -36,17 +41,98 @@ export const loader = async ({
 
 const Page: FC = () => {
   const { muscles, exercisesWithTargets } = useLoaderData<typeof loader>();
-  const exercises = exercisesWithTargets.map(data => data.exercise);
   const actionData = useActionData<typeof action>();
   useEffect(() => {
     console.log({ actionData });
   }, [actionData]);
 
+  const exercises = exercisesWithTargets.map(data => data.exercise);
+
   return (
     <Main>
       <Section>
-        <ul>
-          {JSON.stringify(exercisesWithTargets)}
+        <ul className="flex flex-col gap-4">
+          {exercisesWithTargets.map(({ exercise, targets }) => {
+            return (
+              <li key={exercise.id}>
+                <Card>
+                  <CardHeader className="flex w-full space-x-2">
+                    <div className="grow">
+                      <Heading level={2}>{exercise.name}</Heading>
+                      <CardDescription>{targets.map(target => target.name).join('、')}</CardDescription>
+                    </div>
+                    <div className="flex-none">
+                      <Dialog>
+                        <AlertDialog>
+                          <DropdownMenu>
+                            <DropdownMenuTrigger asChild>
+                              <Button size="icon" variant="ghost">
+                                <MoreHorizontal className="size-4" />
+                              </Button>
+                            </DropdownMenuTrigger>
+                            <DropdownMenuContent align="end">
+                              <DropdownMenuGroup>
+                                <DropdownMenuItem>
+                                  <DialogTrigger className="flex w-full">
+                                    <Edit className="mr-2 size-4" />
+                                    編集
+                                  </DialogTrigger>
+                                </DropdownMenuItem>
+                                <DropdownMenuItem>
+                                  <AlertDialogTrigger className="flex w-full">
+                                    <Trash2 className="mr-2 size-4" />
+                                      削除
+                                  </AlertDialogTrigger>
+                                </DropdownMenuItem>
+                              </DropdownMenuGroup>
+                            </DropdownMenuContent>
+                          </DropdownMenu>
+                          <DialogContent>
+                            <DialogHeader>
+                              <DialogTitle>種目の編集</DialogTitle>
+                            </DialogHeader>
+                            <ExerciseForm
+                              registeredMuscles={muscles}
+                              registeredExercises={exercises}
+                              defaultValues={{ id: exercise.id, name: exercise.name, targets: targets.map(target => target.id) }}
+                              actionType="update"
+                            />
+                            <DialogFooter>
+                              <DialogClose>キャンセル</DialogClose>
+                            </DialogFooter>
+                          </DialogContent>
+                          <AlertDialogContent>
+                            <AlertDialogHeader>
+                              <AlertDialogTitle>種目の削除</AlertDialogTitle>
+                              <AlertDialogDescription>種目を削除しますか？</AlertDialogDescription>
+                            </AlertDialogHeader>
+                            <AlertDialogFooter>
+                              <AlertDialogCancel>キャンセル</AlertDialogCancel>
+                              <Form method="post">
+                                <input
+                                  type="hidden"
+                                  name="id"
+                                  value={exercise.id}
+                                />
+                                <input
+                                  type="hidden"
+                                  name="name"
+                                  value={exercise.name}
+                                />
+                                <AlertDialogAction type="submit" name="actionType" value="delete" className="w-full">
+                                  削除
+                                </AlertDialogAction>
+                              </Form>
+                            </AlertDialogFooter>
+                          </AlertDialogContent>
+                        </AlertDialog>
+                      </Dialog>
+                    </div>
+                  </CardHeader>
+                </Card>
+              </li>
+            );
+          })}
         </ul>
         <Card>
           <CardHeader>
@@ -75,7 +161,7 @@ export const action = async ({
   const database = getInstance(context);
   const { trainee } = await traineeLoader({ context, request, params }).then(response => response.json());
 
-  const [muscles, exercises, formData] = await Promise.all([
+  const [registeredMuscles, registeredExercises, formData] = await Promise.all([
     getMusclesByTraineeId(database)(trainee.id),
     getExercisesByTraineeId(database)(trainee.id),
     request.formData(),
@@ -84,7 +170,7 @@ export const action = async ({
   switch (formData.get('actionType')) {
     case 'create': {
       const submission = parseWithValibot(formData, {
-        schema: getExerciseFormSchema(muscles, exercises),
+        schema: getExerciseFormSchema({ registeredMuscles, registeredExercises, beforeName: null }),
       });
       if(submission.status !== 'success') {
         return json({

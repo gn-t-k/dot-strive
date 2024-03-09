@@ -12,11 +12,14 @@ import { Label } from 'app/ui/label';
 import type { Muscle } from '../../features/muscle/schema';
 import type { FC } from 'react';
 
-export const getMuscleFormSchema = (registeredMuscles: Muscle[]) => object({
+export const getMuscleFormSchema = (
+  { registeredMuscles, beforeName }
+  : { registeredMuscles: Muscle[]; beforeName: string | null },
+) => object({
   id: optional(string()),
   name: nonOptional(string([
     custom(
-      value => registeredMuscles.every(muscle => muscle.name !== value),
+      value => registeredMuscles.every(muscle => muscle.name !== value) || value === beforeName,
       '部位の名前が重複しています',
     ),
   ]), '部位の名前を入力してください'),
@@ -32,10 +35,11 @@ type Props = {
   };
 };
 export const MuscleForm: FC<Props> = ({ registeredMuscles, actionType, defaultValues }) => {
+  const beforeName = defaultValues?.name ?? null;
   const [form, fields] = useForm({
     shouldValidate: 'onBlur',
     shouldRevalidate: 'onInput',
-    onValidate: ({ formData }) => parseWithValibot(formData, { schema: getMuscleFormSchema(registeredMuscles) }),
+    onValidate: ({ formData }) => parseWithValibot(formData, { schema: getMuscleFormSchema({ registeredMuscles, beforeName }) }),
     defaultValue: defaultValues,
   });
 
