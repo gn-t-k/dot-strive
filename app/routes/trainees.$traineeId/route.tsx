@@ -2,7 +2,7 @@ import { json, redirect } from '@remix-run/cloudflare';
 import { Link, Outlet, useLoaderData, useLocation, useNavigation } from '@remix-run/react';
 
 import { getAuthenticator } from 'app/features/auth/get-authenticator.server';
-import { validateTrainee } from 'app/features/trainee';
+import { validateTrainee } from 'app/features/trainee/schema';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from 'app/ui/tabs';
 
 import { HeaderNavigation } from './header-navigation';

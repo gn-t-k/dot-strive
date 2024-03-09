@@ -14,14 +14,16 @@ type DeleteMuscle = (database: Database) => (props: { id: Muscle['id'] }) => Pro
 >;
 export const deleteMuscle: DeleteMuscle = (database) => async ({ id }) => {
   try {
-    // TODO: transaction
-    await database
-      .delete(muscleExerciseMappingsSchema)
-      .where(eq(muscleExerciseMappingsSchema.muscleId, id));
-    const data = await database
-      .delete(musclesSchema)
-      .where(eq(musclesSchema.id, id))
-      .returning();
+    const [, data] = await database.batch([
+      database
+        .delete(muscleExerciseMappingsSchema)
+        .where(eq(muscleExerciseMappingsSchema.muscleId, id)),
+      database
+        .delete(musclesSchema)
+        .where(eq(musclesSchema.id, id))
+        .returning({ id: musclesSchema.id, name: musclesSchema.name }),
+    ]);
+
     const muscle = validateMuscle(data[0]);
 
     return muscle ? { result: 'success', data: muscle } : { result: 'failure' };
