@@ -54,6 +54,7 @@ const Page: FC = () => {
         break;
       }
       case 'update': {
+        setEditing(undefined);
         toast ({
           title: actionData.success ? '部位を更新しました' : '部位の更新に失敗しました',
           variant: actionData.success ? 'default' : 'destructive',
