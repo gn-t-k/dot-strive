@@ -4,12 +4,12 @@ import { exercises as exercisesSchema } from 'database/tables/exercises';
 import { muscleExerciseMappings } from 'database/tables/muscle-exercise-mappings';
 import { muscles as musclesSchema } from 'database/tables/muscles';
 
-import { validateExercise } from '.';
+import { validateExercise } from './schema';
 import { validateMuscle } from '../muscle/schema';
 
-import type { Exercise } from '.';
+import type { Exercise } from './schema';
 import type { Muscle } from '../muscle/schema';
-import type { Trainee } from '../trainee';
+import type { Trainee } from '../trainee/schema';
 import type { Database } from 'database/get-instance';
 
 type GetExercisesWithTargetsByTraineeId = (database: Database) => (traineeId: Trainee['id']) => Promise<Payload>;

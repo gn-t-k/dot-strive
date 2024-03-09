@@ -9,7 +9,7 @@ import { FormErrorMessage } from 'app/ui/form-error-message';
 import { Input } from 'app/ui/input';
 import { Label } from 'app/ui/label';
 
-import type { Exercise } from 'app/features/exercise';
+import type { Exercise } from 'app/features/exercise/schema';
 import type { Muscle } from 'app/features/muscle/schema';
 import type { FC } from 'react';
 

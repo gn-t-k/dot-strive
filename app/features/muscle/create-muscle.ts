@@ -5,7 +5,7 @@ import { muscles as musclesSchema } from 'database/tables/muscles';
 import { validateMuscle } from './schema';
 
 import type { Muscle } from './schema';
-import type { Trainee } from '../trainee';
+import type { Trainee } from '../trainee/schema';
 import type { Database } from 'database/get-instance';
 
 type CreateMuscle = (database: Database) => (props: {
@@ -31,7 +31,7 @@ export const createMuscle: CreateMuscle = (database) => async ({ name, traineeId
         createdAt: new Date(),
         updatedAt: new Date(),
       })
-      .returning();
+      .returning({ id: musclesSchema.id, name: musclesSchema.name });
     const muscle = validateMuscle(data[0]);
 
     return muscle ? { result: 'success', data: muscle } : { result: 'failure' };

@@ -2,7 +2,7 @@ import { CircleUserRound } from 'lucide-react';
 
 import { Logotype } from 'app/ui/logotype';
 
-import type { Trainee } from 'app/features/trainee';
+import type { Trainee } from 'app/features/trainee/schema';
 import type { FC } from 'react';
 
 type Props = {
