@@ -44,7 +44,7 @@ const Page: FC = () => {
             exerciseId: '',
             memo: '',
             sets: [
-              { weight: '', reps: '' },
+              { weight: '', reps: '', rpe: '' },
             ],
           },
         ],
