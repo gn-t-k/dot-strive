@@ -48,6 +48,7 @@ const Page: FC = () => {
   const { toast } = useToast();
 
   useEffect(() => {
+    console.log({ exercisesWithTargets });
     if (!actionData) {
       return;
     }
@@ -75,7 +76,7 @@ const Page: FC = () => {
         break;
       }
     }
-  }, [actionData, toast]);
+  }, [actionData, exercisesWithTargets, toast]);
 
   const exercises = exercisesWithTargets.map(data => data.exercise);
 

@@ -62,15 +62,17 @@ export const ExerciseForm: FC<Props> = ({ registeredMuscles, registeredExercises
       {...getFormProps(form)}
     >
       <input {...getInputProps(fields.id, { type: 'hidden' })} />
-      <fieldset className="space-y-2">
+      <div className="space-y-2">
         <Label htmlFor={fields.name.id}>名前</Label>
         <Input {...getInputProps(fields.name, { type: 'text' })} />
         {fields.name.errors?.map(error => (
           <FormErrorMessage key={error} message={error} />
         ))}
-      </fieldset>
+      </div>
       <fieldset className="space-y-2">
-        <Label>対象の部位</Label>
+        <Label asChild>
+          <legend>対象の部位</legend>
+        </Label>
         {registeredMuscles.map(muscle => {
           const id = (defaultValues?.id ?? 'new') + muscle.id;
           return (
