@@ -4,12 +4,12 @@ import { exercises as exercisesSchema } from 'database/tables/exercises';
 import { muscleExerciseMappings } from 'database/tables/muscle-exercise-mappings';
 import { muscles as musclesSchema } from 'database/tables/muscles';
 
-import { validateExercise } from '.';
+import { validateExercise } from './schema';
 import { validateMuscle } from '../muscle/schema';
 
-import type { Exercise } from '.';
+import type { Exercise } from './schema';
 import type { Muscle } from '../muscle/schema';
-import type { Trainee } from '../trainee';
+import type { Trainee } from '../trainee/schema';
 import type { Database } from 'database/get-instance';
 
 type GetExercisesWithTargetsByTraineeId = (database: Database) => (traineeId: Trainee['id']) => Promise<Payload>;
@@ -23,19 +23,19 @@ export const getExercisesWithTargetsByTraineeId: GetExercisesWithTargetsByTraine
       muscleName: sql`${musclesSchema.name}`.as('muscleName'),
     })
     .from(exercisesSchema)
-    .innerJoin(muscleExerciseMappings, eq(exercisesSchema.id, muscleExerciseMappings.exerciseId))
-    .innerJoin(musclesSchema, eq(muscleExerciseMappings.muscleId, musclesSchema.id))
+    .leftJoin(muscleExerciseMappings, eq(exercisesSchema.id, muscleExerciseMappings.exerciseId))
+    .leftJoin(musclesSchema, eq(muscleExerciseMappings.muscleId, musclesSchema.id))
     .where(eq(exercisesSchema.traineeId, traineeId))
     .orderBy(desc(exercisesSchema.createdAt));
 
   return data.reduce((accumulator: Payload, { exerciseId, exerciseName, muscleId, muscleName }) => {
     const exercise = validateExercise({ id: exerciseId, name: exerciseName });
     const muscle = validateMuscle({ id: muscleId, name: muscleName });
-    if (!exercise || !muscle) return accumulator;
+    if (!exercise) return accumulator;
 
     const index = accumulator.findIndex(({ exercise }) => exercise.id === exerciseId);
     if (index === -1) {
-      return [...accumulator, { exercise, targets: [muscle] }];
+      return [...accumulator, { exercise, targets: muscle ? [muscle] : [] }];
     }
 
     const current = accumulator[index];
@@ -43,7 +43,7 @@ export const getExercisesWithTargetsByTraineeId: GetExercisesWithTargetsByTraine
 
     return accumulator.with(index, {
       exercise: current.exercise,
-      targets: [...current.targets, muscle],
+      targets: muscle ? [...current.targets, muscle] : current.targets,
     });
   }, []);
 };

@@ -9,7 +9,7 @@ import { FormErrorMessage } from 'app/ui/form-error-message';
 import { Input } from 'app/ui/input';
 import { Label } from 'app/ui/label';
 
-import type { Exercise } from 'app/features/exercise';
+import type { Exercise } from 'app/features/exercise/schema';
 import type { Muscle } from 'app/features/muscle/schema';
 import type { FC } from 'react';
 
@@ -62,15 +62,17 @@ export const ExerciseForm: FC<Props> = ({ registeredMuscles, registeredExercises
       {...getFormProps(form)}
     >
       <input {...getInputProps(fields.id, { type: 'hidden' })} />
-      <fieldset className="space-y-2">
+      <div className="space-y-2">
         <Label htmlFor={fields.name.id}>名前</Label>
         <Input {...getInputProps(fields.name, { type: 'text' })} />
         {fields.name.errors?.map(error => (
           <FormErrorMessage key={error} message={error} />
         ))}
-      </fieldset>
+      </div>
       <fieldset className="space-y-2">
-        <Label>対象の部位</Label>
+        <Label asChild>
+          <legend>対象の部位</legend>
+        </Label>
         {registeredMuscles.map(muscle => {
           const id = (defaultValues?.id ?? 'new') + muscle.id;
           return (

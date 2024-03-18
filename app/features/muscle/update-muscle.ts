@@ -28,7 +28,7 @@ export const updateMuscle: UpdateMuscle = (database) => async ({ id, name }) => 
         updatedAt: new Date(),
       })
       .where(eq(musclesSchema.id, id))
-      .returning();
+      .returning({ id: musclesSchema.id, name: musclesSchema.name });
     const muscle = validateMuscle(data[0]);
 
     return muscle ? { result: 'success', data: muscle } : { result: 'failure' };

@@ -3,9 +3,9 @@ import { eq } from 'drizzle-orm';
 import { exercises as exercisesSchema } from 'database/tables/exercises';
 import { muscleExerciseMappings as muscleExerciseMappingsSchema } from 'database/tables/muscle-exercise-mappings';
 
-import { validateExercise } from '.';
+import { validateExercise } from './schema';
 
-import type { Exercise } from '.';
+import type { Exercise } from './schema';
 import type { Database } from 'database/get-instance';
 
 type DeleteExercise = (database: Database) => (props: { id: Exercise['id' ] }) => Promise<
@@ -15,13 +15,16 @@ type DeleteExercise = (database: Database) => (props: { id: Exercise['id' ] }) =
 export const deleteExercise: DeleteExercise = (database) => async ({ id }) => {
   try {
     // TODO: transaction
-    await database
-      .delete(muscleExerciseMappingsSchema)
-      .where(eq(muscleExerciseMappingsSchema.exerciseId, id));
-    const data = await database
-      .delete(exercisesSchema)
-      .where(eq(exercisesSchema.id, id))
-      .returning();
+    const [_, data] = await database.batch([
+      database
+        .delete(muscleExerciseMappingsSchema)
+        .where(eq(muscleExerciseMappingsSchema.exerciseId, id)),
+      database
+        .delete(exercisesSchema)
+        .where(eq(exercisesSchema.id, id))
+        .returning({ id: exercisesSchema.id, name: exercisesSchema.name }),
+    ]);
+
     const exercise = validateExercise(data[0]);
 
     return exercise ? { result: 'success', data: exercise } : { result: 'failure' };
