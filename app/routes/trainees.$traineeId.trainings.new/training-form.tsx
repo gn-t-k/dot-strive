@@ -1,5 +1,4 @@
-import { getFieldsetProps, getFormProps, getInputProps, getTextareaProps, useForm, useInputControl } from '@conform-to/react';
-import * as VisuallyHidden from '@radix-ui/react-visually-hidden';
+import { getFieldsetProps, getFormProps, getInputProps, getSelectProps, getTextareaProps, useForm, useInputControl } from '@conform-to/react';
 import { Form } from '@remix-run/react';
 import { parseWithValibot } from 'conform-to-valibot';
 import { format } from 'date-fns';
@@ -12,7 +11,6 @@ import { DatePicker } from 'app/ui/date-picker';
 import { FormErrorMessage } from 'app/ui/form-error-message';
 import { Input } from 'app/ui/input';
 import { Label } from 'app/ui/label';
-import { Popover, PopoverContent, PopoverTrigger } from 'app/ui/popover';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from 'app/ui/select';
 import { Slider } from 'app/ui/slider';
 import { Textarea } from 'app/ui/textarea';
@@ -44,13 +42,16 @@ const setSchema = object({
   ),
   rpe: optional(
     number([
-      minValue(1, '1以上の数値で入力してください'),
+      minValue(0, '1以上の数値で入力してください'),
       maxValue(10, '10以下の数値で入力してください'),
-    ]),
-  ),
+    ]), 0),
   sameWeight: optional(boolean()),
   sameReps: optional(boolean()),
 });
+
+type TrainingFormType = Infer<ReturnType<typeof getTrainingFormSchema>>;
+type RecordFieldsType = Infer<ReturnType<typeof getRecordSchema>>;
+type SetFieldsType = Infer<typeof setSchema>;
 
 type Props = {
   registeredExercises: Exercise[];
@@ -69,7 +70,7 @@ type Props = {
   };
 };
 export const TrainingForm: FC<Props> = ({ registeredExercises, actionType, defaultValues }) => {
-  const [form, fields] = useForm({
+  const [form, fields] = useForm<TrainingFormType>({
     shouldValidate: 'onBlur',
     shouldRevalidate: 'onInput',
     onValidate: ({ formData }) => {
@@ -134,8 +135,8 @@ export const TrainingForm: FC<Props> = ({ registeredExercises, actionType, defau
 };
 
 type RecordFieldsProps = {
-  form: FormMetadata<Infer<ReturnType<typeof getTrainingFormSchema>>>;
-  record: FieldMetadata<Infer<ReturnType<typeof getRecordSchema>>>;
+  form: FormMetadata<TrainingFormType>;
+  record: FieldMetadata<RecordFieldsType>;
   registeredExercises: Exercise[];
   recordIndex: number;
 };
@@ -147,7 +148,7 @@ const RecordFields: FC<RecordFieldsProps> = ({ form, record, registeredExercises
     <Card key={record.id}>
       <CardHeader className="flex flex-col space-y-2">
         <Label htmlFor={recordFields.exerciseId.id}>種目</Label>
-        <Select {...getInputProps(recordFields.exerciseId, { type: 'text' })}>
+        <Select {...getSelectProps(recordFields.exerciseId)} defaultValue="">
           <SelectTrigger id={recordFields.exerciseId.id}>
             <SelectValue placeholder="種目を選択する" />
           </SelectTrigger>
@@ -167,57 +168,16 @@ const RecordFields: FC<RecordFieldsProps> = ({ form, record, registeredExercises
         ))}
       </CardHeader>
       <CardContent className="flex flex-col space-y-4">
-        <fieldset className="flex flex-col space-y-2">
-          <Label htmlFor={recordFields.sets.id} asChild><legend>重量・回数</legend></Label>
-          {sets.map((set, setIndex) => {
-            const setFields = set.getFieldset();
-
-            return (
-              <div key={set.id} className="grid grid-cols-5 gap-2">
-                <div className="col-span-2 flex flex-col">
-                  <div className="flex items-center gap-1">
-                    <VisuallyHidden.Root>
-                      <Label htmlFor={setFields.weight.id}>重量</Label>
-                    </VisuallyHidden.Root>
-                    <Input
-                      {...getInputProps(setFields.weight, { type: 'number' })}
-                      inputMode="decimal"
-                      step="0.01"
-                      placeholder="0.00"
-                    />
-                    <span>kg</span>
-                  </div>
-                  {setFields.weight.errors?.map(error => (
-                    <FormErrorMessage key={error} message={error} />
-                  ))}
-                </div>
-                <div className="col-span-2 flex flex-col">
-                  <div className="flex items-center gap-1">
-                    <VisuallyHidden.Root>
-                      <Label htmlFor={setFields.reps.id}>回数</Label>
-                    </VisuallyHidden.Root>
-                    <Input
-                      {...getInputProps(setFields.reps, { type: 'number' })}
-                      pattern="[0-9]*"
-                      placeholder="000"
-                    />
-                    <span>回</span>
-                  </div>
-                  {setFields.reps.errors?.map(error => (
-                    <FormErrorMessage key={error} message={error} />
-                  ))}
-                </div>
-                <Button
-                  {...form.remove.getButtonProps({ name: `records[${recordIndex}].sets`, index: setIndex })}
-                  size="icon"
-                  variant="ghost"
-                  className="col-span-1 justify-self-end"
-                >
-                  <X className="size-4" />
-                </Button>
-              </div>
-            );
-          })}
+        <div className="flex flex-col space-y-4">
+          {sets.map((set, setIndex) => (
+            <SetFields
+              key={set.id}
+              form={form}
+              set={set}
+              recordIndex={recordIndex}
+              setIndex={setIndex}
+            />
+          ))}
           {recordFields.sets.errors?.map(error => (
             <FormErrorMessage key={error} message={error} />
           ))}
@@ -225,13 +185,9 @@ const RecordFields: FC<RecordFieldsProps> = ({ form, record, registeredExercises
             {...form.insert.getButtonProps({ name: `records[${recordIndex}].sets` })}
             variant="secondary"
           >
-          重量・回数を追加
+            セットを追加
           </Button>
-        </fieldset>
-        <fieldset className="flex flex-col space-y-2">
-          <Label htmlFor={recordFields.sets.id} asChild><legend>重量・回数・RPE</legend></Label>
-          {sets.map((set, setIndex) => <SetFields key={set.id} set={set} setIndex={setIndex} />)}
-        </fieldset>
+        </div>
       </CardContent>
       <CardFooter className="flex flex-col space-y-4">
         <div className="flex w-full flex-col space-y-2">
@@ -254,59 +210,68 @@ const RecordFields: FC<RecordFieldsProps> = ({ form, record, registeredExercises
 };
 
 type SetFieldsProps = {
-  set: FieldMetadata<Infer<typeof setSchema>>;
+  form: FormMetadata<TrainingFormType>;
+  set: FieldMetadata<SetFieldsType>;
+  recordIndex: number;
   setIndex: number;
 };
-const SetFields: FC<SetFieldsProps> = ({ set, setIndex }) => {
+const SetFields: FC<SetFieldsProps> = ({ form, set, recordIndex, setIndex }) => {
   const setFields = set.getFieldset();
-  const { value, change } = useInputControl(setFields.rpe);
+  const { value: rpeValue, change: onRPEChange } = useInputControl(setFields.rpe);
 
   return (
-    <div key={set.id}>
-      <Popover>
-        <PopoverTrigger asChild>
-          <Input
-            value={`${setFields.weight.value ?? '-'}kg ${setFields.reps.value ?? '-'}回 RPE${setFields.rpe.value ?? '-'}`}
-            readOnly
-          />
-        </PopoverTrigger>
-        <PopoverContent className="flex flex-col">
-          <div className="flex items-center gap-1">
-            <Label htmlFor={setFields.weight.id}>重量</Label>
-            <Input
-              {...getInputProps(setFields.weight, { type: 'number' })}
-              inputMode="decimal"
-              step="0.01"
-              placeholder="0.00"
-            />
-            <span>kg</span>
-          </div>
-          <div className="flex items-center gap-1">
-            <Label htmlFor={setFields.reps.id}>回数</Label>
-            <Input
-              {...getInputProps(setFields.reps, { type: 'number' })}
-              pattern="[0-9]*"
-              placeholder="000"
-            />
-            <span>回</span>
-          </div>
-          <div className="flex flex-col">
-            <div className="flex items-center justify-between">
-              <Label htmlFor={setFields.rpe.id}>RPE</Label>
-              <span>{setFields.rpe.value ?? '-'}</span>
-            </div>
-            <Slider
-              step={1}
-              min={1}
-              max={10}
-              onValueChange={(value) => change(value[0]?.toString())}
-            />
-            <VisuallyHidden.Root>
-              <input />
-            </VisuallyHidden.Root>
-          </div>
-        </PopoverContent>
-      </Popover>
-    </div>
+    <fieldset {...getFieldsetProps(set)} className="flex flex-col space-y-1">
+      <header className="flex items-center justify-between">
+        <Label asChild><legend>{setIndex + 1}セット目</legend></Label>
+        <Button
+          {...form.remove.getButtonProps({ name: `records[${recordIndex}].sets`, index: setIndex })}
+          size="icon"
+          variant="ghost"
+          className="col-span-1 justify-self-end"
+        >
+          <X className="size-4" />
+        </Button>
+      </header>
+      <div className="flex items-center gap-4 px-4">
+        <Label className="flex-none">重量</Label>
+        <Input
+          {...getInputProps(setFields.weight, { type: 'number' })}
+          inputMode="decimal"
+          step="0.01"
+          placeholder="0.00"
+        />
+        <span className="flex-none">kg</span>
+      </div>
+      {setFields.weight.errors?.map(error => (
+        <FormErrorMessage key={error} message={error} />
+      ))}
+      <div className="flex items-center gap-4 px-4">
+        <Label className="flex-none">回数</Label>
+        <Input
+          {...getInputProps(setFields.reps, { type: 'number' })}
+          pattern="[0-9]*"
+          placeholder="000"
+        />
+        <span className="flex-none">回</span>
+      </div>
+      {setFields.reps.errors?.map(error => (
+        <FormErrorMessage key={error} message={error} />
+      ))}
+      <div className="flex items-center gap-4 px-4">
+        <Label className="flex-none">RPE</Label>
+        <span className="flex-none text-muted-foreground">{[undefined, '0'].includes(rpeValue) ? '-' : rpeValue}</span>
+        <Slider
+          step={1}
+          min={0}
+          max={10}
+          defaultValue={[0]}
+          value={rpeValue ? [Number(rpeValue)] : [0]}
+          onValueChange={(value) => onRPEChange(value[0]?.toString())}
+        />
+      </div>
+      {setFields.rpe.errors?.map(error => (
+        <FormErrorMessage key={error} message={error} />
+      ))}
+    </fieldset>
   );
 };
