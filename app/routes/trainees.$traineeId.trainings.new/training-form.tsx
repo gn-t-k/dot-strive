@@ -22,14 +22,14 @@ import type { Input as Infer } from 'valibot';
 
 export const getTrainingFormSchema = (registeredExercises: Exercise[]) => object({
   date: nonOptional(date(), '日付を選択してください'),
-  records: array(getRecordSchema(registeredExercises), [minLength(1, '記録を入力してください')]),
+  records: array(getRecordSchema(registeredExercises), [minLength(1, 'セッションの情報を入力してください')]),
 });
 const getRecordSchema = (registeredExercises: Exercise[]) => object({
   exerciseId: nonOptional(string([
     custom(value => registeredExercises.some(exercise => exercise.id === value)),
   ]), '種目を選択してください'),
   memo: optional(string([maxLength(100, 'メモは100文字以内で入力してください')])),
-  sets: array(setSchema, [minLength(1, '重量・回数を入力してください')]),
+  sets: array(setSchema, [minLength(1, 'セットの情報を入力してください')]),
 });
 const setSchema = object({
   weight: nonOptional(
@@ -103,7 +103,7 @@ export const TrainingForm: FC<Props> = ({ registeredExercises, actionType, defau
         ))}
       </div>
       <fieldset {...getFieldsetProps(fields.records)} className="flex flex-col space-y-4">
-        <Label asChild><legend>記録</legend></Label>
+        <Label asChild><legend>セッション</legend></Label>
         {records.map((record, recordIndex) => ( 
           <RecordFields
             key={record.id}
@@ -115,9 +115,10 @@ export const TrainingForm: FC<Props> = ({ registeredExercises, actionType, defau
         ))}
         <Button
           {...form.insert.getButtonProps({ name: 'records' })}
+          {...form.insert.getButtonProps({ name: `records[${records.length}].sets` })}
           variant="secondary"
         >
-          記録を追加
+          セッションを追加
         </Button>
         {fields.records.errors?.map(error => (
           <FormErrorMessage key={error} message={error} />
@@ -202,7 +203,7 @@ const RecordFields: FC<RecordFieldsProps> = ({ form, record, registeredExercises
           variant="outline"
           className="w-full"
         >
-        記録を削除
+        セッションを削除
         </Button>
       </CardFooter>
     </Card>
@@ -233,7 +234,7 @@ const SetFields: FC<SetFieldsProps> = ({ form, set, recordIndex, setIndex }) => 
         </Button>
       </header>
       <div className="flex items-center gap-4 px-4">
-        <Label className="flex-none">重量</Label>
+        <Label htmlFor={setFields.weight.id} className="flex-none">重量</Label>
         <Input
           {...getInputProps(setFields.weight, { type: 'number' })}
           inputMode="decimal"
@@ -246,7 +247,7 @@ const SetFields: FC<SetFieldsProps> = ({ form, set, recordIndex, setIndex }) => 
         <FormErrorMessage key={error} message={error} />
       ))}
       <div className="flex items-center gap-4 px-4">
-        <Label className="flex-none">回数</Label>
+        <Label htmlFor={setFields.reps.id} className="flex-none">回数</Label>
         <Input
           {...getInputProps(setFields.reps, { type: 'number' })}
           pattern="[0-9]*"
@@ -264,8 +265,6 @@ const SetFields: FC<SetFieldsProps> = ({ form, set, recordIndex, setIndex }) => 
           step={1}
           min={0}
           max={10}
-          defaultValue={[0]}
-          value={rpeValue ? [Number(rpeValue)] : [0]}
           onValueChange={(value) => onRPEChange(value[0]?.toString())}
         />
       </div>
