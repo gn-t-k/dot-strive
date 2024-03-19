@@ -39,7 +39,7 @@ const Page: FC = () => {
       registeredExercises={registeredExercises}
       defaultValues={{
         date: format(new Date(), 'yyyy-MM-dd'),
-        records: [
+        sessions: [
           {
             exerciseId: '',
             memo: '',

@@ -22,9 +22,9 @@ import type { Input as Infer } from 'valibot';
 
 export const getTrainingFormSchema = (registeredExercises: Exercise[]) => object({
   date: nonOptional(date(), '日付を選択してください'),
-  records: array(getRecordSchema(registeredExercises), [minLength(1, 'セッションの情報を入力してください')]),
+  sessions: array(getSessionSchema(registeredExercises), [minLength(1, 'セッションの情報を入力してください')]),
 });
-const getRecordSchema = (registeredExercises: Exercise[]) => object({
+const getSessionSchema = (registeredExercises: Exercise[]) => object({
   exerciseId: nonOptional(string([
     custom(value => registeredExercises.some(exercise => exercise.id === value)),
   ]), '種目を選択してください'),
@@ -50,7 +50,7 @@ const setSchema = object({
 });
 
 type TrainingFormType = Infer<ReturnType<typeof getTrainingFormSchema>>;
-type RecordFieldsType = Infer<ReturnType<typeof getRecordSchema>>;
+type SessionFieldsType = Infer<ReturnType<typeof getSessionSchema>>;
 type SetFieldsType = Infer<typeof setSchema>;
 
 type Props = {
@@ -58,7 +58,7 @@ type Props = {
   actionType: string;
   defaultValues?: {
     date: string;
-    records: {
+    sessions: {
       exerciseId: Exercise['id'];
       memo: string;
       sets: {
@@ -79,51 +79,19 @@ export const TrainingForm: FC<Props> = ({ registeredExercises, actionType, defau
     defaultValue: defaultValues,
   });
 
-  const {
-    value: selectedDate,
-    change: onSelectedDateChange,
-  } = useInputControl(fields.date);
-
-  const records = fields.records.getFieldList();
-
   return (
     <Form
       method="post"
       className="flex flex-col space-y-5"
       {...getFormProps(form)}
     >
-      <div className="flex flex-col space-y-2">
-        <Label htmlFor={fields.date.id}>日付</Label>
-        <DatePicker
-          date={selectedDate ? new Date(selectedDate) : undefined}
-          setDate={(date) => onSelectedDateChange(date ? format(date, 'yyyy-MM-dd') : undefined)}
-        />
-        {fields.date.errors?.map(error => (
-          <FormErrorMessage key={error} message={error} />
-        ))}
-      </div>
-      <fieldset {...getFieldsetProps(fields.records)} className="flex flex-col space-y-4">
-        <Label asChild><legend>セッション</legend></Label>
-        {records.map((record, recordIndex) => ( 
-          <RecordFields
-            key={record.id}
-            form={form}
-            record={record}
-            registeredExercises={registeredExercises}
-            recordIndex={recordIndex}
-          />
-        ))}
-        <Button
-          {...form.insert.getButtonProps({ name: 'records' })}
-          {...form.insert.getButtonProps({ name: `records[${records.length}].sets` })}
-          variant="secondary"
-        >
-          セッションを追加
-        </Button>
-        {fields.records.errors?.map(error => (
-          <FormErrorMessage key={error} message={error} />
-        ))}
-      </fieldset>
+      <DateField dateField={fields.date} />
+      <SessionsFieldset
+        removeIntent={form.remove}
+        insertIntent={form.insert}
+        sessionsField={fields.sessions}
+        registeredExercises={registeredExercises}
+      />
       <Button
         type="submit"
         name="actionType"
@@ -135,71 +103,102 @@ export const TrainingForm: FC<Props> = ({ registeredExercises, actionType, defau
   );
 };
 
-type RecordFieldsProps = {
-  form: FormMetadata<TrainingFormType>;
-  record: FieldMetadata<RecordFieldsType>;
-  registeredExercises: Exercise[];
-  recordIndex: number;
+type DateFieldProps = {
+  dateField: FieldMetadata<TrainingFormType['date']>;
 };
-const RecordFields: FC<RecordFieldsProps> = ({ form, record, registeredExercises, recordIndex }) => {
-  const recordFields = record.getFieldset();
-  const sets = recordFields.sets.getFieldList();
+const DateField: FC<DateFieldProps> = ({ dateField }) => {
+  const { value, change } = useInputControl(dateField);
 
   return (
-    <Card key={record.id}>
-      <CardHeader className="flex flex-col space-y-2">
-        <Label htmlFor={recordFields.exerciseId.id}>種目</Label>
-        <Select {...getSelectProps(recordFields.exerciseId)} defaultValue="">
-          <SelectTrigger id={recordFields.exerciseId.id}>
-            <SelectValue placeholder="種目を選択する" />
-          </SelectTrigger>
-          <SelectContent>
-            {registeredExercises.map(exercise => (
-              <SelectItem
-                key={`${recordFields.exerciseId.id}-${exercise.id}`}
-                value={exercise.id}
-              >
-                {exercise.name}
-              </SelectItem>
-            ))}
-          </SelectContent>
-        </Select>
-        {recordFields.exerciseId.errors?.map(error => (
-          <FormErrorMessage key={error} message={error} />
-        ))}
+    <div className="flex flex-col space-y-2">
+      <Label htmlFor={dateField.id}>日付</Label>
+      <DatePicker
+        date={value ? new Date(value) : undefined}
+        setDate={(date) => change(date ? format(date, 'yyyy-MM-dd') : undefined)}
+      />
+      {dateField.errors?.map(error => (
+        <FormErrorMessage key={error} message={error} />
+      ))}
+    </div>
+  );
+};
+
+type SessionsFieldsetProps = {
+  removeIntent: FormMetadata<TrainingFormType>['remove'];
+  insertIntent: FormMetadata<TrainingFormType>['insert'];
+  sessionsField: FieldMetadata<TrainingFormType['sessions']>;
+  registeredExercises: Exercise[];
+};
+const SessionsFieldset: FC<SessionsFieldsetProps> = ({ removeIntent, insertIntent, sessionsField, registeredExercises }) => {
+  const sessions = sessionsField.getFieldList();
+
+  return (
+    <fieldset {...getFieldsetProps(sessionsField)} className="flex flex-col space-y-4">
+      <Label asChild><legend>セッション</legend></Label>
+      {sessions.map((session, sessionIndex) => ( 
+        <SessionFields
+          key={session.id}
+          removeIntent={removeIntent}
+          insertIntent={insertIntent}
+          sessionField={session}
+          registeredExercises={registeredExercises}
+          sessionIndex={sessionIndex}
+        />
+      ))}
+      <Button
+        {...insertIntent.getButtonProps({ name: 'sessions' })}
+        {...insertIntent.getButtonProps({ name: `sessions[${sessions.length}].sets` })}
+        variant="secondary"
+      >
+        セッションを追加
+      </Button>
+      {sessionsField.errors?.map(error => (
+        <FormErrorMessage key={error} message={error} />
+      ))}
+    </fieldset>
+  );
+};
+
+type SessionFieldsProps = {
+  removeIntent: FormMetadata<TrainingFormType>['remove'];
+  insertIntent: FormMetadata<TrainingFormType>['insert'];
+  sessionField: FieldMetadata<SessionFieldsType>;
+  registeredExercises: Exercise[];
+  sessionIndex: number;
+};
+const SessionFields: FC<SessionFieldsProps> = ({ removeIntent, insertIntent, sessionField, registeredExercises, sessionIndex }) => {
+  const sessionFields = sessionField.getFieldset();
+  const sets = sessionFields.sets.getFieldList();
+
+  return (
+    <Card key={sessionField.id}>
+      <CardHeader>
+        <ExerciseField
+          registeredExercises={registeredExercises}
+          exerciseField={sessionFields.exerciseId}
+        />
       </CardHeader>
       <CardContent className="flex flex-col space-y-4">
-        <div className="flex flex-col space-y-4">
-          {sets.map((set, setIndex) => (
-            <SetFields
-              key={set.id}
-              form={form}
-              set={set}
-              recordIndex={recordIndex}
-              setIndex={setIndex}
-            />
-          ))}
-          {recordFields.sets.errors?.map(error => (
-            <FormErrorMessage key={error} message={error} />
-          ))}
-          <Button
-            {...form.insert.getButtonProps({ name: `records[${recordIndex}].sets` })}
-            variant="secondary"
-          >
-            セットを追加
-          </Button>
-        </div>
+        <SetsFieldset
+          setsField={sets}
+          removeIntent={removeIntent}
+          insertIntent={insertIntent}
+          sessionIndex={sessionIndex}
+        />
+        {sessionFields.sets.errors?.map(error => (
+          <FormErrorMessage key={error} message={error} />
+        ))}
       </CardContent>
       <CardFooter className="flex flex-col space-y-4">
         <div className="flex w-full flex-col space-y-2">
-          <Label htmlFor={recordFields.memo.id}>メモ</Label>
-          <Textarea {...getTextareaProps(recordFields.memo)} />
-          {recordFields.memo.errors?.map(error => (
+          <Label htmlFor={sessionFields.memo.id}>メモ</Label>
+          <Textarea {...getTextareaProps(sessionFields.memo)} />
+          {sessionFields.memo.errors?.map(error => (
             <FormErrorMessage key={error} message={error} />
           ))}
         </div>
         <Button
-          {...form.remove.getButtonProps({ name: 'records', index: recordIndex })}
+          {...removeIntent.getButtonProps({ name: 'sessions', index: sessionIndex })}
           variant="outline"
           className="w-full"
         >
@@ -210,22 +209,79 @@ const RecordFields: FC<RecordFieldsProps> = ({ form, record, registeredExercises
   );
 };
 
+type ExerciseFieldProps = {
+  registeredExercises: Exercise[];
+  exerciseField: FieldMetadata<SessionFieldsType['exerciseId']>;
+};
+const ExerciseField: FC<ExerciseFieldProps> = ({ registeredExercises, exerciseField }) => {
+  return (
+    <div className="flex flex-col space-y-2">
+      <Label htmlFor={exerciseField.id}>種目</Label>
+      <Select {...getSelectProps(exerciseField)} defaultValue="">
+        <SelectTrigger id={exerciseField.id}>
+          <SelectValue placeholder="種目を選択する" />
+        </SelectTrigger>
+        <SelectContent>
+          {registeredExercises.map(exercise => (
+            <SelectItem
+              key={`${exercise.id}-${exercise.id}`}
+              value={exercise.id}
+            >
+              {exercise.name}
+            </SelectItem>
+          ))}
+        </SelectContent>
+      </Select>
+      {exerciseField.errors?.map(error => (
+        <FormErrorMessage key={error} message={error} />
+      ))}
+    </div>
+  );
+};
+
+type SetsFieldsetProps = {
+  setsField: FieldMetadata<SetFieldsType>[];
+  removeIntent: FormMetadata<TrainingFormType>['remove'];
+  insertIntent: FormMetadata<TrainingFormType>['insert'];
+  sessionIndex: number;
+};
+const SetsFieldset: FC<SetsFieldsetProps> = ({ setsField, removeIntent, insertIntent, sessionIndex }) => {
+  return (
+    <div className="flex flex-col space-y-4">
+      {setsField.map((set, setIndex) => (
+        <SetFields
+          key={set.id}
+          removeIntent={removeIntent}
+          setField={set}
+          sessionIndex={sessionIndex}
+          setIndex={setIndex}
+        />
+      ))}
+      <Button
+        {...insertIntent.getButtonProps({ name: `sessions[${sessionIndex}].sets` })}
+        variant="secondary"
+      >
+        セットを追加
+      </Button>
+    </div>
+  );
+};
+
 type SetFieldsProps = {
-  form: FormMetadata<TrainingFormType>;
-  set: FieldMetadata<SetFieldsType>;
-  recordIndex: number;
+  removeIntent: FormMetadata<TrainingFormType>['remove'];
+  setField: FieldMetadata<SetFieldsType>;
+  sessionIndex: number;
   setIndex: number;
 };
-const SetFields: FC<SetFieldsProps> = ({ form, set, recordIndex, setIndex }) => {
-  const setFields = set.getFieldset();
-  const { value: rpeValue, change: onRPEChange } = useInputControl(setFields.rpe);
-
+const SetFields: FC<SetFieldsProps> = ({ removeIntent, setField, sessionIndex, setIndex }) => {
+  const setFields = setField.getFieldset();
+  
   return (
-    <fieldset {...getFieldsetProps(set)} className="flex flex-col space-y-1">
+    <fieldset {...getFieldsetProps(setField)} className="flex flex-col space-y-1">
       <header className="flex items-center justify-between">
         <Label asChild><legend>{setIndex + 1}セット目</legend></Label>
         <Button
-          {...form.remove.getButtonProps({ name: `records[${recordIndex}].sets`, index: setIndex })}
+          {...removeIntent.getButtonProps({ name: `sessions[${sessionIndex}].sets`, index: setIndex })}
           size="icon"
           variant="ghost"
           className="col-span-1 justify-self-end"
@@ -233,44 +289,77 @@ const SetFields: FC<SetFieldsProps> = ({ form, set, recordIndex, setIndex }) => 
           <X className="size-4" />
         </Button>
       </header>
-      <div className="flex items-center gap-4 px-4">
-        <Label htmlFor={setFields.weight.id} className="flex-none">重量</Label>
-        <Input
-          {...getInputProps(setFields.weight, { type: 'number' })}
-          inputMode="decimal"
-          step="0.01"
-          placeholder="0.00"
-        />
-        <span className="flex-none">kg</span>
-      </div>
-      {setFields.weight.errors?.map(error => (
+      <WeightField weightField={setFields.weight} />
+      <RepsField repsField={setFields.reps} />
+      <RPEField rpeField={setFields.rpe} />
+    </fieldset>
+  );
+};
+
+type WeightFieldProps = {
+  weightField: FieldMetadata<SetFieldsType['weight']>;
+};
+const WeightField: FC<WeightFieldProps> = ({ weightField }) => {
+  return (
+    <div className="flex items-center gap-4 px-4">
+      <Label htmlFor={weightField.id} className="flex-none">重量</Label>
+      <Input
+        {...getInputProps(weightField, { type: 'number' })}
+        inputMode="decimal"
+        step="0.01"
+        placeholder="0.00"
+      />
+      <span className="flex-none">kg</span>
+      {weightField.errors?.map(error => (
         <FormErrorMessage key={error} message={error} />
       ))}
+    </div>
+  );
+};
+
+type RepsFieldProps = {
+  repsField: FieldMetadata<SetFieldsType['reps']>;
+};
+const RepsField: FC<RepsFieldProps> = ({ repsField }) => {
+  return (
+    <>
       <div className="flex items-center gap-4 px-4">
-        <Label htmlFor={setFields.reps.id} className="flex-none">回数</Label>
+        <Label htmlFor={repsField.id} className="flex-none">回数</Label>
         <Input
-          {...getInputProps(setFields.reps, { type: 'number' })}
+          {...getInputProps(repsField, { type: 'number' })}
           pattern="[0-9]*"
           placeholder="000"
         />
         <span className="flex-none">回</span>
       </div>
-      {setFields.reps.errors?.map(error => (
+      {repsField.errors?.map(error => (
         <FormErrorMessage key={error} message={error} />
       ))}
+    </>
+  );
+};
+
+type RPEFieldProps = {
+  rpeField: FieldMetadata<SetFieldsType['rpe']>;
+};
+const RPEField: FC<RPEFieldProps> = ({ rpeField }) => {
+  const { value, change } = useInputControl(rpeField);
+
+  return (
+    <>
       <div className="flex items-center gap-4 px-4">
         <Label className="flex-none">RPE</Label>
-        <span className="flex-none text-muted-foreground">{[undefined, '0'].includes(rpeValue) ? '-' : rpeValue}</span>
+        <span className="flex-none text-muted-foreground">{[undefined, '0'].includes(value) ? '-' : value}</span>
         <Slider
           step={1}
           min={0}
           max={10}
-          onValueChange={(value) => onRPEChange(value[0]?.toString())}
+          onValueChange={(value) => change(value[0]?.toString())}
         />
       </div>
-      {setFields.rpe.errors?.map(error => (
+      {rpeField.errors?.map(error => (
         <FormErrorMessage key={error} message={error} />
       ))}
-    </fieldset>
+    </>
   );
 };
