@@ -82,7 +82,7 @@ export const TrainingForm: FC<Props> = ({ registeredExercises, actionType, defau
   return (
     <Form
       method="post"
-      className="flex flex-col space-y-5"
+      className="flex flex-col gap-8"
       {...getFormProps(form)}
     >
       <DateField dateField={fields.date} />
@@ -110,7 +110,7 @@ const DateField: FC<DateFieldProps> = ({ dateField }) => {
   const { value, change } = useInputControl(dateField);
 
   return (
-    <div className="flex flex-col space-y-2">
+    <div className="flex flex-col gap-2">
       <Label htmlFor={dateField.id}>日付</Label>
       <DatePicker
         date={value ? new Date(value) : undefined}
@@ -133,17 +133,23 @@ const SessionsFieldset: FC<SessionsFieldsetProps> = ({ removeIntent, insertInten
   const sessions = sessionsField.getFieldList();
 
   return (
-    <fieldset {...getFieldsetProps(sessionsField)} className="flex flex-col space-y-4">
+    <fieldset {...getFieldsetProps(sessionsField)} className="flex flex-col space-y-2">
       <Label asChild><legend>セッション</legend></Label>
-      {sessions.map((session, sessionIndex) => ( 
-        <SessionFields
-          key={session.id}
-          removeIntent={removeIntent}
-          insertIntent={insertIntent}
-          sessionField={session}
-          registeredExercises={registeredExercises}
-          sessionIndex={sessionIndex}
-        />
+      <ol>
+        {sessions.map((session, sessionIndex) => ( 
+          <li key={session.id}>
+            <SessionFields
+              removeIntent={removeIntent}
+              insertIntent={insertIntent}
+              sessionField={session}
+              registeredExercises={registeredExercises}
+              sessionIndex={sessionIndex}
+            />
+          </li>
+        ))}
+      </ol>
+      {sessionsField.errors?.map(error => (
+        <FormErrorMessage key={error} message={error} />
       ))}
       <Button
         {...insertIntent.getButtonProps({ name: 'sessions' })}
@@ -152,9 +158,6 @@ const SessionsFieldset: FC<SessionsFieldsetProps> = ({ removeIntent, insertInten
       >
         セッションを追加
       </Button>
-      {sessionsField.errors?.map(error => (
-        <FormErrorMessage key={error} message={error} />
-      ))}
     </fieldset>
   );
 };
@@ -178,19 +181,24 @@ const SessionFields: FC<SessionFieldsProps> = ({ removeIntent, insertIntent, ses
           exerciseField={sessionFields.exerciseId}
         />
       </CardHeader>
-      <CardContent className="flex flex-col space-y-4">
+      <CardContent className="flex flex-col gap-4">
         <SetsFieldset
           setsField={sets}
           removeIntent={removeIntent}
-          insertIntent={insertIntent}
           sessionIndex={sessionIndex}
         />
         {sessionFields.sets.errors?.map(error => (
           <FormErrorMessage key={error} message={error} />
         ))}
+        <Button
+          {...insertIntent.getButtonProps({ name: `sessions[${sessionIndex}].sets` })}
+          variant="secondary"
+        >
+          セットを追加
+        </Button>
       </CardContent>
-      <CardFooter className="flex flex-col space-y-4">
-        <div className="flex w-full flex-col space-y-2">
+      <CardFooter className="flex flex-col gap-4">
+        <div className="flex w-full flex-col gap-2">
           <Label htmlFor={sessionFields.memo.id}>メモ</Label>
           <Textarea {...getTextareaProps(sessionFields.memo)} />
           {sessionFields.memo.errors?.map(error => (
@@ -215,7 +223,7 @@ type ExerciseFieldProps = {
 };
 const ExerciseField: FC<ExerciseFieldProps> = ({ registeredExercises, exerciseField }) => {
   return (
-    <div className="flex flex-col space-y-2">
+    <div className="flex flex-col gap-2">
       <Label htmlFor={exerciseField.id}>種目</Label>
       <Select {...getSelectProps(exerciseField)} defaultValue="">
         <SelectTrigger id={exerciseField.id}>
@@ -242,28 +250,22 @@ const ExerciseField: FC<ExerciseFieldProps> = ({ registeredExercises, exerciseFi
 type SetsFieldsetProps = {
   setsField: FieldMetadata<SetFieldsType>[];
   removeIntent: FormMetadata<TrainingFormType>['remove'];
-  insertIntent: FormMetadata<TrainingFormType>['insert'];
   sessionIndex: number;
 };
-const SetsFieldset: FC<SetsFieldsetProps> = ({ setsField, removeIntent, insertIntent, sessionIndex }) => {
+const SetsFieldset: FC<SetsFieldsetProps> = ({ setsField, removeIntent, sessionIndex }) => {
   return (
-    <div className="flex flex-col space-y-4">
+    <ol className="flex flex-col gap-4">
       {setsField.map((set, setIndex) => (
-        <SetFields
-          key={set.id}
-          removeIntent={removeIntent}
-          setField={set}
-          sessionIndex={sessionIndex}
-          setIndex={setIndex}
-        />
+        <li key={set.id}>
+          <SetFields
+            removeIntent={removeIntent}
+            setField={set}
+            sessionIndex={sessionIndex}
+            setIndex={setIndex}
+          />
+        </li>
       ))}
-      <Button
-        {...insertIntent.getButtonProps({ name: `sessions[${sessionIndex}].sets` })}
-        variant="secondary"
-      >
-        セットを追加
-      </Button>
-    </div>
+    </ol>
   );
 };
 
@@ -277,7 +279,7 @@ const SetFields: FC<SetFieldsProps> = ({ removeIntent, setField, sessionIndex, s
   const setFields = setField.getFieldset();
   
   return (
-    <fieldset {...getFieldsetProps(setField)} className="flex flex-col space-y-1">
+    <fieldset {...getFieldsetProps(setField)} className="flex flex-col gap-2">
       <header className="flex items-center justify-between">
         <Label asChild><legend>{setIndex + 1}セット目</legend></Label>
         <Button
@@ -301,15 +303,17 @@ type WeightFieldProps = {
 };
 const WeightField: FC<WeightFieldProps> = ({ weightField }) => {
   return (
-    <div className="flex items-center gap-4 px-4">
-      <Label htmlFor={weightField.id} className="flex-none">重量</Label>
-      <Input
-        {...getInputProps(weightField, { type: 'number' })}
-        inputMode="decimal"
-        step="0.01"
-        placeholder="0.00"
-      />
-      <span className="flex-none">kg</span>
+    <div className="flex flex-col gap-2 px-4">
+      <div className="flex items-center gap-4">
+        <Label htmlFor={weightField.id} className="flex-none">重量</Label>
+        <Input
+          {...getInputProps(weightField, { type: 'number' })}
+          inputMode="decimal"
+          step="0.01"
+          placeholder="0.00"
+        />
+        <span className="flex-none">kg</span>
+      </div>
       {weightField.errors?.map(error => (
         <FormErrorMessage key={error} message={error} />
       ))}
@@ -322,8 +326,8 @@ type RepsFieldProps = {
 };
 const RepsField: FC<RepsFieldProps> = ({ repsField }) => {
   return (
-    <>
-      <div className="flex items-center gap-4 px-4">
+    <div className="flex flex-col gap-2 px-4">
+      <div className="flex items-center gap-4">
         <Label htmlFor={repsField.id} className="flex-none">回数</Label>
         <Input
           {...getInputProps(repsField, { type: 'number' })}
@@ -335,7 +339,7 @@ const RepsField: FC<RepsFieldProps> = ({ repsField }) => {
       {repsField.errors?.map(error => (
         <FormErrorMessage key={error} message={error} />
       ))}
-    </>
+    </div>
   );
 };
 
@@ -346,8 +350,8 @@ const RPEField: FC<RPEFieldProps> = ({ rpeField }) => {
   const { value, change } = useInputControl(rpeField);
 
   return (
-    <>
-      <div className="flex items-center gap-4 px-4">
+    <div className="flex flex-col gap-2 px-4">
+      <div className="flex items-center gap-4">
         <Label className="flex-none">RPE</Label>
         <span className="flex-none text-muted-foreground">{[undefined, '0'].includes(value) ? '-' : value}</span>
         <Slider
@@ -360,6 +364,6 @@ const RPEField: FC<RPEFieldProps> = ({ rpeField }) => {
       {rpeField.errors?.map(error => (
         <FormErrorMessage key={error} message={error} />
       ))}
-    </>
+    </div>
   );
 };
