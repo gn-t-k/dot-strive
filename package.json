@@ -36,7 +36,7 @@
     "class-variance-authority": "0.7.0",
     "clsx": "2.1.0",
     "conform-to-valibot": "1.5.1",
-    "drizzle-orm": "0.30.3",
+    "drizzle-orm": "0.30.4",
     "isbot": "5.1.2",
     "lucide-react": "0.359.0",
     "date-fns": "^3.4.0",
