@@ -6,8 +6,9 @@ import { X } from 'lucide-react';
 import { array, boolean, custom, date, maxLength, maxValue, minLength, minValue, nonOptional, number, object, optional, string } from 'valibot';
 
 import { Button } from 'app/ui/button';
-import { Card, CardContent, CardFooter, CardHeader } from 'app/ui/card';
+import { Card, CardContent, CardHeader } from 'app/ui/card';
 import { DatePicker } from 'app/ui/date-picker';
+import { DropdownMenu, DropdownMenuContent, DropdownMenuGroup, DropdownMenuItem, DropdownMenuTrigger } from 'app/ui/dropdown-menu';
 import { FormErrorMessage } from 'app/ui/form-error-message';
 import { Input } from 'app/ui/input';
 import { Label } from 'app/ui/label';
@@ -133,9 +134,8 @@ const SessionsFieldset: FC<SessionsFieldsetProps> = ({ removeIntent, insertInten
   const sessions = sessionsField.getFieldList();
 
   return (
-    <fieldset {...getFieldsetProps(sessionsField)} className="flex flex-col space-y-2">
-      <Label asChild><legend>セッション</legend></Label>
-      <ol>
+    <fieldset {...getFieldsetProps(sessionsField)} className="flex flex-col gap-4">
+      <ol className="flex flex-col gap-4">
         {sessions.map((session, sessionIndex) => ( 
           <li key={session.id}>
             <SessionFields
@@ -175,44 +175,47 @@ const SessionFields: FC<SessionFieldsProps> = ({ removeIntent, insertIntent, ses
 
   return (
     <Card key={sessionField.id}>
-      <CardHeader>
+      <CardHeader className="flex items-center justify-between">
+        <Label asChild><legend>セッション{sessionIndex + 1}</legend></Label>
+        <DropdownMenu>
+          <DropdownMenuTrigger asChild>
+            <Button size="icon" variant="ghost">
+              <X className="size-4" />
+            </Button>
+          </DropdownMenuTrigger>
+          <DropdownMenuContent>
+            <DropdownMenuGroup>
+              <DropdownMenuItem asChild>
+                <Button
+                  {...removeIntent.getButtonProps({ name: 'sessions', index: sessionIndex })}
+                  variant="ghost"
+                >
+                    セッション{sessionIndex + 1}を削除する
+                </Button>
+              </DropdownMenuItem>
+            </DropdownMenuGroup>
+          </DropdownMenuContent>
+        </DropdownMenu>
+      </CardHeader>
+      <CardContent className="flex flex-col gap-4">
         <ExerciseField
           registeredExercises={registeredExercises}
           exerciseField={sessionFields.exerciseId}
         />
-      </CardHeader>
-      <CardContent className="flex flex-col gap-4">
         <SetsFieldset
-          setsField={sets}
+          setFieldList={sets}
+          setsField={sessionFields.sets}
           removeIntent={removeIntent}
           sessionIndex={sessionIndex}
         />
-        {sessionFields.sets.errors?.map(error => (
-          <FormErrorMessage key={error} message={error} />
-        ))}
         <Button
           {...insertIntent.getButtonProps({ name: `sessions[${sessionIndex}].sets` })}
           variant="secondary"
         >
           セットを追加
         </Button>
+        <MemoField memoField={sessionFields.memo} />
       </CardContent>
-      <CardFooter className="flex flex-col gap-4">
-        <div className="flex w-full flex-col gap-2">
-          <Label htmlFor={sessionFields.memo.id}>メモ</Label>
-          <Textarea {...getTextareaProps(sessionFields.memo)} />
-          {sessionFields.memo.errors?.map(error => (
-            <FormErrorMessage key={error} message={error} />
-          ))}
-        </div>
-        <Button
-          {...removeIntent.getButtonProps({ name: 'sessions', index: sessionIndex })}
-          variant="outline"
-          className="w-full"
-        >
-        セッションを削除
-        </Button>
-      </CardFooter>
     </Card>
   );
 };
@@ -247,25 +250,46 @@ const ExerciseField: FC<ExerciseFieldProps> = ({ registeredExercises, exerciseFi
   );
 };
 
+type MemoFieldProps = {
+  memoField: FieldMetadata<SessionFieldsType['memo']>;
+};
+const MemoField: FC<MemoFieldProps> = ({ memoField }) => {
+  return (
+    <div className="flex flex-col gap-2">
+      <Label htmlFor={memoField.id}>メモ</Label>
+      <Textarea {...getTextareaProps(memoField)} />
+      {memoField.errors?.map(error => (
+        <FormErrorMessage key={error} message={error} />
+      ))}
+    </div>
+  );
+};
+
 type SetsFieldsetProps = {
-  setsField: FieldMetadata<SetFieldsType>[];
+  setFieldList: FieldMetadata<SetFieldsType>[];
+  setsField: FieldMetadata<SessionFieldsType['sets']>;
   removeIntent: FormMetadata<TrainingFormType>['remove'];
   sessionIndex: number;
 };
-const SetsFieldset: FC<SetsFieldsetProps> = ({ setsField, removeIntent, sessionIndex }) => {
+const SetsFieldset: FC<SetsFieldsetProps> = ({ setFieldList, setsField, removeIntent, sessionIndex }) => {
   return (
-    <ol className="flex flex-col gap-4">
-      {setsField.map((set, setIndex) => (
-        <li key={set.id}>
-          <SetFields
-            removeIntent={removeIntent}
-            setField={set}
-            sessionIndex={sessionIndex}
-            setIndex={setIndex}
-          />
-        </li>
+    <div className="flex flex-col gap-4">
+      <ol className="flex flex-col gap-4">
+        {setFieldList.map((set, setIndex) => (
+          <li key={set.id}>
+            <SetFields
+              removeIntent={removeIntent}
+              setField={set}
+              sessionIndex={sessionIndex}
+              setIndex={setIndex}
+            />
+          </li>
+        ))}
+      </ol>
+      {setsField.errors?.map(error => (
+        <FormErrorMessage key={error} message={error} />
       ))}
-    </ol>
+    </div>
   );
 };
 
