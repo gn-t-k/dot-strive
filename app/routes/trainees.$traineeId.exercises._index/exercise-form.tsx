@@ -1,4 +1,4 @@
-import { getFormProps, getInputProps, useForm } from '@conform-to/react';
+import { getCollectionProps, getFieldsetProps, getFormProps, getInputProps, useForm } from '@conform-to/react';
 import { Form } from '@remix-run/react';
 import { parseWithValibot } from 'conform-to-valibot';
 import { array, custom, minLength, nonOptional, object, optional, string } from 'valibot';
@@ -69,24 +69,21 @@ export const ExerciseForm: FC<Props> = ({ registeredMuscles, registeredExercises
           <FormErrorMessage key={error} message={error} />
         ))}
       </div>
-      <fieldset className="space-y-2">
+      <fieldset {...getFieldsetProps(fields.targets)} className="space-y-2">
         <Label asChild>
           <legend>対象の部位</legend>
         </Label>
-        {registeredMuscles.map(muscle => {
-          const id = (defaultValues?.id ?? 'new') + muscle.id;
-          return (
-            <div key={muscle.id} className="flex items-center space-x-1">
-              <Checkbox
-                id={id}
-                value={muscle.id}
-                name={fields.targets.name}
-                defaultChecked={defaultValues?.targets.includes(muscle.id) ?? false}
-              />
-              <Label htmlFor={id} className="font-medium">{muscle.name}</Label>
-            </div>
-          );
-        })}
+        {getCollectionProps(
+          fields.targets,
+          { type: 'checkbox', options: registeredMuscles.map(muscle => muscle.id) },
+        ).map((props) => (
+          <div key={props.id} className="flex items-center space-x-1">
+            <Checkbox {...props} type="button" />
+            <Label htmlFor={props.id} className="font-medium">
+              {registeredMuscles.find(muscle => muscle.id === props.value)?.name}
+            </Label>
+          </div>
+        ))}
         {fields.targets.errors?.map(error => (
           <FormErrorMessage key={error} message={error} />
         ))}

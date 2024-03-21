@@ -14,7 +14,7 @@ import { loader as traineeLoader } from 'app/routes/trainees.$traineeId/route';
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from 'app/ui/alert-dialog';
 import { Button } from 'app/ui/button';
 import { Card, CardContent, CardDescription, CardHeader } from 'app/ui/card';
-import { Dialog, DialogClose, DialogContent, DialogFooter, DialogHeader, DialogTitle, DialogTrigger } from 'app/ui/dialog';
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from 'app/ui/dialog';
 import { DropdownMenu, DropdownMenuContent, DropdownMenuGroup, DropdownMenuItem, DropdownMenuTrigger } from 'app/ui/dropdown-menu';
 import { Heading } from 'app/ui/heading';
 import { Main } from 'app/ui/main';
@@ -129,9 +129,6 @@ const Page: FC = () => {
                               defaultValues={{ id: exercise.id, name: exercise.name, targets: targets.map(target => target.id) }}
                               actionType="update"
                             />
-                            <DialogFooter>
-                              <DialogClose>キャンセル</DialogClose>
-                            </DialogFooter>
                           </DialogContent>
                           <AlertDialogContent>
                             <AlertDialogHeader>
