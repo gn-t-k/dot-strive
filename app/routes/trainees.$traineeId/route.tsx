@@ -78,6 +78,9 @@ const PageWithNavigationHeader: FC = () => {
           <Outlet />
         )
       }
+      <footer className="mt-8 flex h-24 items-center justify-center border-t px-4">
+        <p className="text-muted-foreground">.STRIVE</p>
+      </footer>
     </>
   );
 };

@@ -2,9 +2,11 @@ import { getFieldsetProps, getFormProps, getInputProps, getSelectProps, getTexta
 import { Form } from '@remix-run/react';
 import { parseWithValibot } from 'conform-to-valibot';
 import { format } from 'date-fns';
-import { X } from 'lucide-react';
+import { History, X } from 'lucide-react';
+import { useCallback } from 'react';
 import { array, boolean, custom, date, maxLength, maxValue, minLength, minValue, nonOptional, number, object, optional, string } from 'valibot';
 
+import { Badge } from 'app/ui/badge';
 import { Button } from 'app/ui/button';
 import { Card, CardContent, CardHeader } from 'app/ui/card';
 import { DatePicker } from 'app/ui/date-picker';
@@ -12,13 +14,14 @@ import { DropdownMenu, DropdownMenuContent, DropdownMenuGroup, DropdownMenuItem,
 import { FormErrorMessage } from 'app/ui/form-error-message';
 import { Input } from 'app/ui/input';
 import { Label } from 'app/ui/label';
+import { Popover, PopoverClose, PopoverContent, PopoverTrigger } from 'app/ui/popover';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from 'app/ui/select';
 import { Slider } from 'app/ui/slider';
 import { Textarea } from 'app/ui/textarea';
 
 import type { FieldMetadata, FormMetadata } from '@conform-to/react';
 import type { Exercise } from 'app/features/exercise/schema';
-import type { FC } from 'react';
+import type { FC , ComponentProps } from 'react';
 import type { Input as Infer } from 'valibot';
 
 export const getTrainingFormSchema = (registeredExercises: Exercise[]) => object({
@@ -171,7 +174,7 @@ type SessionFieldsProps = {
 };
 const SessionFields: FC<SessionFieldsProps> = ({ removeIntent, insertIntent, sessionField, registeredExercises, sessionIndex }) => {
   const sessionFields = sessionField.getFieldset();
-  const sets = sessionFields.sets.getFieldList();
+  const setFieldList = sessionFields.sets.getFieldList();
 
   return (
     <Card key={sessionField.id}>
@@ -203,7 +206,7 @@ const SessionFields: FC<SessionFieldsProps> = ({ removeIntent, insertIntent, ses
           exerciseField={sessionFields.exerciseId}
         />
         <SetsFieldset
-          setFieldList={sets}
+          setFieldList={setFieldList}
           setsField={sessionFields.sets}
           removeIntent={removeIntent}
           sessionIndex={sessionIndex}
@@ -272,6 +275,15 @@ type SetsFieldsetProps = {
   sessionIndex: number;
 };
 const SetsFieldset: FC<SetsFieldsetProps> = ({ setFieldList, setsField, removeIntent, sessionIndex }) => {
+  const weightHistory = [...new Set(setFieldList.flatMap(setField => {
+    const weight = setField.value?.weight;
+    return weight ? [weight] : [];
+  }))].sort();
+  const repsHistory = [...new Set(setFieldList.flatMap(setField => {
+    const reps = setField.value?.reps;
+    return reps ? [reps] : [];
+  }))].sort();
+
   return (
     <div className="flex flex-col gap-4">
       <ol className="flex flex-col gap-4">
@@ -282,6 +294,8 @@ const SetsFieldset: FC<SetsFieldsetProps> = ({ setFieldList, setsField, removeIn
               setField={set}
               sessionIndex={sessionIndex}
               setIndex={setIndex}
+              weightHistory={weightHistory}
+              repsHistory={repsHistory}
             />
           </li>
         ))}
@@ -298,14 +312,16 @@ type SetFieldsProps = {
   setField: FieldMetadata<SetFieldsType>;
   sessionIndex: number;
   setIndex: number;
+  weightHistory: string[];
+  repsHistory: string[];
 };
-const SetFields: FC<SetFieldsProps> = ({ removeIntent, setField, sessionIndex, setIndex }) => {
+const SetFields: FC<SetFieldsProps> = ({ removeIntent, setField, sessionIndex, setIndex, weightHistory, repsHistory }) => {
   const setFields = setField.getFieldset();
   
   return (
     <fieldset {...getFieldsetProps(setField)} className="flex flex-col gap-2">
       <header className="flex items-center justify-between">
-        <Label asChild><legend>{setIndex + 1}セット目</legend></Label>
+        <Label asChild><legend>セット{setIndex + 1}</legend></Label>
         <Button
           {...removeIntent.getButtonProps({ name: `sessions[${sessionIndex}].sets`, index: setIndex })}
           size="icon"
@@ -315,8 +331,8 @@ const SetFields: FC<SetFieldsProps> = ({ removeIntent, setField, sessionIndex, s
           <X className="size-4" />
         </Button>
       </header>
-      <WeightField weightField={setFields.weight} />
-      <RepsField repsField={setFields.reps} />
+      <WeightField weightField={setFields.weight} weightHistory={weightHistory} />
+      <RepsField repsField={setFields.reps} repsHistory={repsHistory} />
       <RPEField rpeField={setFields.rpe} />
     </fieldset>
   );
@@ -324,19 +340,51 @@ const SetFields: FC<SetFieldsProps> = ({ removeIntent, setField, sessionIndex, s
 
 type WeightFieldProps = {
   weightField: FieldMetadata<SetFieldsType['weight']>;
+  weightHistory: string[];
 };
-const WeightField: FC<WeightFieldProps> = ({ weightField }) => {
+const WeightField: FC<WeightFieldProps> = ({ weightField, weightHistory }) => {
+  const { value, change } = useInputControl(weightField);
+
+  type OnClickBadge = (weight: string) => ComponentProps<typeof Badge>['onClick'];
+  const onClickBadge = useCallback<OnClickBadge>((weight) => (_) => {
+    change(weight);
+  }, [change]);
+
   return (
-    <div className="flex flex-col gap-2 px-4">
-      <div className="flex items-center gap-4">
-        <Label htmlFor={weightField.id} className="flex-none">重量</Label>
+    <div className="flex flex-col gap-2 pl-2">
+      <div className="grid grid-cols-6 items-center gap-2">
+        <Label htmlFor={weightField.id} className="col-span-1">重量</Label>
         <Input
           {...getInputProps(weightField, { type: 'number' })}
+          value={value}
+          onChange={(event) => change(event.target.value)}
           inputMode="decimal"
           step="0.01"
           placeholder="0.00"
+          className="col-span-3"
         />
-        <span className="flex-none">kg</span>
+        <span className="col-span-1">kg</span>
+        <Popover>
+          <PopoverTrigger asChild>
+            <Button size="icon" variant="ghost" className="col-span-1">
+              <History className="size-4" />
+            </Button>
+          </PopoverTrigger>
+          <PopoverContent className="max-w-72">
+            {weightHistory.length === 0 && (
+              <p className="text-sm text-muted-foreground">入力したセットの値を選んで入力できます</p>
+            )}
+            <ul className="flex gap-2">
+              {weightHistory.map((weight, index) => (
+                <li key={index}>
+                  <PopoverClose>
+                    <Badge onClick={onClickBadge(weight)} variant="outline">{weight}</Badge>
+                  </PopoverClose>
+                </li>
+              ))}
+            </ul>
+          </PopoverContent>
+        </Popover>
       </div>
       {weightField.errors?.map(error => (
         <FormErrorMessage key={error} message={error} />
@@ -347,18 +395,50 @@ const WeightField: FC<WeightFieldProps> = ({ weightField }) => {
 
 type RepsFieldProps = {
   repsField: FieldMetadata<SetFieldsType['reps']>;
+  repsHistory: string[];
 };
-const RepsField: FC<RepsFieldProps> = ({ repsField }) => {
+const RepsField: FC<RepsFieldProps> = ({ repsField, repsHistory }) => {
+  const { value, change } = useInputControl(repsField);
+
+  type OnClickBadge = (reps: string) => ComponentProps<typeof Badge>['onClick'];
+  const onClickBadge = useCallback<OnClickBadge>((reps) => (_) => {
+    change(reps);
+  }, [change]);
+
   return (
-    <div className="flex flex-col gap-2 px-4">
-      <div className="flex items-center gap-4">
-        <Label htmlFor={repsField.id} className="flex-none">回数</Label>
+    <div className="flex flex-col gap-2 pl-2">
+      <div className="grid grid-cols-6 items-center gap-2">
+        <Label htmlFor={repsField.id} className="col-span-1">回数</Label>
         <Input
           {...getInputProps(repsField, { type: 'number' })}
+          value={value}
+          onChange={(event) => change(event.target.value)}
           pattern="[0-9]*"
           placeholder="000"
+          className="col-span-3"
         />
-        <span className="flex-none">回</span>
+        <span className="col-span-1">回</span>
+        <Popover>
+          <PopoverTrigger asChild>
+            <Button size="icon" variant="ghost" className="col-span-1">
+              <History className="size-4" />
+            </Button>
+          </PopoverTrigger>
+          <PopoverContent className="max-w-72">
+            {repsHistory.length === 0 && (
+              <p className="text-sm text-muted-foreground">セットの値を選んで入力できるようになります</p>
+            )}
+            <ul className="flex gap-2">
+              {repsHistory.map((reps, index) => (
+                <li key={index}>
+                  <PopoverClose>
+                    <Badge onClick={onClickBadge(reps)} variant="outline">{reps}</Badge>
+                  </PopoverClose>
+                </li>
+              ))}
+            </ul>
+          </PopoverContent>
+        </Popover>
       </div>
       {repsField.errors?.map(error => (
         <FormErrorMessage key={error} message={error} />
@@ -374,15 +454,16 @@ const RPEField: FC<RPEFieldProps> = ({ rpeField }) => {
   const { value, change } = useInputControl(rpeField);
 
   return (
-    <div className="flex flex-col gap-2 px-4">
-      <div className="flex items-center gap-4">
-        <Label className="flex-none">RPE</Label>
-        <span className="flex-none text-muted-foreground">{[undefined, '0'].includes(value) ? '-' : value}</span>
+    <div className="flex flex-col gap-2 pl-2">
+      <div className="grid grid-cols-6 items-center gap-2">
+        <Label className="col-span-1">RPE</Label>
+        <span className="col-span-1">{[undefined, '0'].includes(value) ? '-' : value}</span>
         <Slider
           step={1}
           min={0}
           max={10}
           onValueChange={(value) => change(value[0]?.toString())}
+          className="col-span-3"
         />
       </div>
       {rpeField.errors?.map(error => (
