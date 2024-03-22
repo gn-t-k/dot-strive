@@ -370,7 +370,7 @@ const WeightField: FC<WeightFieldProps> = ({ weightField, weightHistory }) => {
               <History className="size-4" />
             </Button>
           </PopoverTrigger>
-          <PopoverContent className="max-w-72">
+          <PopoverContent side="top" className="max-w-72">
             {weightHistory.length === 0 && (
               <p className="text-sm text-muted-foreground">入力したセットの値を選んで入力できます</p>
             )}
@@ -424,9 +424,9 @@ const RepsField: FC<RepsFieldProps> = ({ repsField, repsHistory }) => {
               <History className="size-4" />
             </Button>
           </PopoverTrigger>
-          <PopoverContent className="max-w-72">
+          <PopoverContent side="top" className="max-w-72">
             {repsHistory.length === 0 && (
-              <p className="text-sm text-muted-foreground">セットの値を選んで入力できるようになります</p>
+              <p className="text-sm text-muted-foreground">入力したセットの値を選んで入力できます</p>
             )}
             <ul className="flex gap-2">
               {repsHistory.map((reps, index) => (
