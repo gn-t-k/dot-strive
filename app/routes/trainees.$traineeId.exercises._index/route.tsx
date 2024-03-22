@@ -48,7 +48,6 @@ const Page: FC = () => {
   const { toast } = useToast();
 
   useEffect(() => {
-    console.log({ exercisesWithTargets });
     if (!actionData) {
       return;
     }

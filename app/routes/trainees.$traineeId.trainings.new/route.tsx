@@ -1,6 +1,5 @@
 import { json } from '@remix-run/cloudflare';
 import { useActionData, useLoaderData } from '@remix-run/react';
-import { format } from 'date-fns';
 import { parseFormData } from 'parse-nested-form-data';
 import { useEffect } from 'react';
 
@@ -30,25 +29,13 @@ const Page: FC = () => {
   const actionData = useActionData<typeof action>();
 
   useEffect(() => {
-    console.log({ actionData, registeredExercises });
-  }, [actionData, registeredExercises]);
+    console.log({ actionData });
+  }, [actionData]);
 
   return (
     <TrainingForm
       actionType="create"
       registeredExercises={registeredExercises}
-      defaultValues={{
-        date: format(new Date(), 'yyyy-MM-dd'),
-        sessions: [
-          {
-            exerciseId: '',
-            memo: '',
-            sets: [
-              { weight: '', reps: '', rpe: '' },
-            ],
-          },
-        ],
-      }}
     />
   );
 };
