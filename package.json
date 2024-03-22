@@ -15,7 +15,7 @@
     "production:migrations:apply": "NO_D1_WARNING=true wrangler d1 migrations apply dot-strive"
   },
   "dependencies": {
-    "@conform-to/react": "1.0.4",
+    "@conform-to/react": "1.0.5",
     "@paralleldrive/cuid2": "2.2.2",
     "@radix-ui/react-alert-dialog": "1.0.5",
     "@radix-ui/react-avatar": "1.0.4",
