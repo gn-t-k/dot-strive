@@ -80,7 +80,18 @@ export const TrainingForm: FC<Props> = ({ registeredExercises, actionType, defau
     onValidate: ({ formData }) => {
       return parseWithValibot(formData, { schema: getTrainingFormSchema(registeredExercises) });
     },
-    defaultValue: defaultValues,
+    defaultValue: defaultValues ?? {
+      date: format(new Date(), 'yyyy-MM-dd'),
+      sessions: [
+        {
+          exerciseId: '',
+          memo: '',
+          sets: [
+            { weight: '', reps: '', rpe: '' },
+          ],
+        },
+      ],
+    },
   });
 
   return (
@@ -350,13 +361,15 @@ const WeightField: FC<WeightFieldProps> = ({ weightField, weightHistory }) => {
     change(weight);
   }, [change]);
 
+  const { value: _, ...inputProps } = getInputProps(weightField, { type: 'number' });
+
   return (
     <div className="flex flex-col gap-2 pl-2">
       <div className="grid grid-cols-6 items-center gap-2">
         <Label htmlFor={weightField.id} className="col-span-1">重量</Label>
         <Input
-          {...getInputProps(weightField, { type: 'number' })}
-          value={value}
+          {...inputProps}
+          value={value ?? ''}
           onChange={(event) => change(event.target.value)}
           inputMode="decimal"
           step="0.01"
@@ -370,7 +383,7 @@ const WeightField: FC<WeightFieldProps> = ({ weightField, weightHistory }) => {
               <History className="size-4" />
             </Button>
           </PopoverTrigger>
-          <PopoverContent className="max-w-72">
+          <PopoverContent side="top" className="max-w-72">
             {weightHistory.length === 0 && (
               <p className="text-sm text-muted-foreground">入力したセットの値を選んで入力できます</p>
             )}
@@ -405,13 +418,15 @@ const RepsField: FC<RepsFieldProps> = ({ repsField, repsHistory }) => {
     change(reps);
   }, [change]);
 
+  const { value: _, ...inputProps } = getInputProps(repsField, { type: 'number' });
+
   return (
     <div className="flex flex-col gap-2 pl-2">
       <div className="grid grid-cols-6 items-center gap-2">
         <Label htmlFor={repsField.id} className="col-span-1">回数</Label>
         <Input
-          {...getInputProps(repsField, { type: 'number' })}
-          value={value}
+          {...inputProps}
+          value={value ?? ''}
           onChange={(event) => change(event.target.value)}
           pattern="[0-9]*"
           placeholder="000"
@@ -424,9 +439,9 @@ const RepsField: FC<RepsFieldProps> = ({ repsField, repsHistory }) => {
               <History className="size-4" />
             </Button>
           </PopoverTrigger>
-          <PopoverContent className="max-w-72">
+          <PopoverContent side="top" className="max-w-72">
             {repsHistory.length === 0 && (
-              <p className="text-sm text-muted-foreground">セットの値を選んで入力できるようになります</p>
+              <p className="text-sm text-muted-foreground">入力したセットの値を選んで入力できます</p>
             )}
             <ul className="flex gap-2">
               {repsHistory.map((reps, index) => (
