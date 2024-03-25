@@ -1,3 +1,4 @@
+import { createId } from '@paralleldrive/cuid2';
 import { json } from '@remix-run/cloudflare';
 import { Form, useActionData, useLoaderData } from '@remix-run/react';
 import { parseWithValibot } from 'conform-to-valibot';
@@ -7,6 +8,7 @@ import { useCallback, useEffect, useState } from 'react';
 import { createMuscle } from 'app/features/muscle/create-muscle';
 import { deleteMuscle } from 'app/features/muscle/delete-muscle';
 import { getMusclesByTraineeId } from 'app/features/muscle/get-muscles-by-trainee-id';
+import { validateMuscle } from 'app/features/muscle/schema';
 import { updateMuscle } from 'app/features/muscle/update-muscle';
 import { loader as traineeLoader } from 'app/routes/trainees.$traineeId/route';
 import { MuscleForm, getMuscleFormSchema } from 'app/routes/trainees.$traineeId.muscles._index/muscle-form';
@@ -200,24 +202,33 @@ export const action = async ({
         return json({
           action: 'create',
           success: false,
+          description: 'form validation failed',
           submission: submission.reply(),
         });
       }
 
-      const createResult = await createMuscle(database)({
-        name: submission.value.name,
-        traineeId: trainee.id,
-      });
+      const muscle = validateMuscle({ id: createId(), name: submission.value.name });
+      if (!muscle) {
+        return json({
+          action: 'create',
+          success: false,
+          description: 'domain validation failed',
+        });
+      }
+
+      const createResult = await createMuscle(database)({ muscle, traineeId: trainee.id });
       if (createResult.result === 'failure') {
         return json({
           action: 'create',
           success: false,
+          description: 'create data failed ',
         });
       }
 
       return json({
         action: 'create',
         success: true,
+        description: 'success',
         submission: submission.reply(),
       });
     }
@@ -228,6 +239,7 @@ export const action = async ({
         return json({
           action: 'update',
           success: false,
+          description: 'formData "id" is not found',
         });
       }
 
@@ -240,24 +252,33 @@ export const action = async ({
         return json({
           action: 'update',
           success: false,
+          description: 'form validation failed',
           submission: submission.reply(),
         });
       }
 
-      const updateResult = await updateMuscle(database)({
-        id: muscleId,
-        name: submission.value.name,
-      });
+      const muscle = validateMuscle({ id: muscleId, name: submission.value.name });
+      if (!muscle) {
+        return json({
+          action: 'update',
+          success: false,
+          description: 'domain validation failed',
+        });
+      }
+
+      const updateResult = await updateMuscle(database)(muscle);
       if (updateResult.result === 'failure') {
         return json({
           action: 'update',
           success: false,
+          description: 'update data failed',
         });
       }
 
       return json({
         action: 'update',
         success: true,
+        description: 'success',
         submission: submission.reply(),
       });
     }
@@ -268,6 +289,7 @@ export const action = async ({
         return json({
           action: 'delete',
           success: false,
+          description: 'formData "id" is not found',
         });
       }
 
@@ -276,12 +298,14 @@ export const action = async ({
         return json({
           action: 'delete',
           success: false,
+          description: 'delete data failed',
         });
       }
 
       return json({
         action: 'delete',
         success: true,
+        description: 'success',
       });
     }
 

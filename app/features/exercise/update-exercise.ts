@@ -3,24 +3,12 @@ import { eq } from 'drizzle-orm';
 import { exercises as exercisesSchema } from 'database/tables/exercises';
 import { muscleExerciseMappings as muscleExerciseMappingsSchema } from 'database/tables/muscle-exercise-mappings';
 
-import { validateExercise } from './schema';
-
 import type { Exercise } from './schema';
-import type { Muscle } from '../muscle/schema';
 import type { Database } from 'database/get-instance';
 
-type UpdateExercise = (database: Database) => (props: {
-  id: Exercise['id'];
-  name: Exercise['name'];
-  targets: Muscle['id'][];
-}) => Promise<
-| {
-  result: 'success';
-  data: Exercise;
-}
-| {
-  result: 'failure';
-}
+type UpdateExercise = (database: Database) => (props: Exercise) => Promise<
+| { result: 'success'; data: { id: string; name: string } }
+| { result: 'failure' }
 >;
 export const updateExercise: UpdateExercise = (database) => async ({ id, name, targets }) => {
   try {
@@ -38,12 +26,12 @@ export const updateExercise: UpdateExercise = (database) => async ({ id, name, t
         .where(eq(muscleExerciseMappingsSchema.exerciseId, id)),
       database
         .insert(muscleExerciseMappingsSchema)
-        .values(targets.map(muscleId => ({ exerciseId: id, muscleId }))),
+        .values(targets.map(target => ({ exerciseId: id, muscleId: target.id }))),
     ]);
     
-    const exercise = validateExercise(data[0]);
+    const updated = data[0];
 
-    return exercise ? { result: 'success', data: exercise } : { result: 'failure' };
+    return updated ? { result: 'success', data: updated } : { result: 'failure' };
   } catch (error) {
     console.log({ error });
     return { result: 'failure' };
