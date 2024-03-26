@@ -7,6 +7,7 @@ import { useEffect } from 'react';
 import { getExercisesByTraineeId } from 'app/features/exercise/get-exercises-by-trainee-id';
 import { getExercisesWithTargetsByTraineeId } from 'app/features/exercise/get-exercises-with-targets-by-trainee-id';
 import { validateExercise } from 'app/features/exercise/schema';
+import { createTraining } from 'app/features/training/create-training';
 import { validateTraining } from 'app/features/training/schema';
 import { loader as traineeLoader } from 'app/routes/trainees.$traineeId/route';
 import { getInstance } from 'database/get-instance';
@@ -95,10 +96,20 @@ export const action = async ({
         });
       }
 
+      const createResult = await createTraining(database)({ training, traineeId: trainee.id });
+      if (createResult.result === 'failure') {
+        return json({
+          action: 'create',
+          success: false,
+          description: 'create data failed',
+        });
+      }
+
       return json({
         action: 'create',
         success: true,
         description: 'success',
+        submission: submission.reply(),
       });
     }
     case 'update':

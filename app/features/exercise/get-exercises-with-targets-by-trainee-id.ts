@@ -38,7 +38,7 @@ export const getExercisesWithTargetsByTraineeId: GetExercisesWithTargetsByTraine
     .where(eq(exercises.traineeId, traineeId))
     .orderBy(desc(exercises.createdAt));
 
-  return data.reduce((accumulator: Payload, { exerciseId, exerciseName, muscleId, muscleName }) => {
+  return data.reduce<Payload>((accumulator, { exerciseId, exerciseName, muscleId, muscleName }) => {
     const [parseTargetResult, parseExerciseResult] = [
       safeParse(targetSchema, { id: muscleId, name: muscleName }),
       safeParse(exerciseSchema, { id: exerciseId, name: exerciseName }),
