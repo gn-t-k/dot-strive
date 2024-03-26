@@ -4,11 +4,13 @@ import { muscles as musclesSchema } from 'database/tables/muscles';
 
 import { validateMuscle } from './schema';
 
-import type { Muscle } from './schema';
-import type { Trainee } from '../trainee/schema';
 import type { Database } from 'database/get-instance';
 
-type GetMusclesByTraineeId = (database: Database) => (traineeId: Trainee['id']) => Promise<Muscle[]>;
+type GetMusclesByTraineeId = (database: Database) => (traineeId: string) => Promise<Muscle[]>;
+type Muscle = {
+  id: string;
+  name: string;
+};
 export const getMusclesByTraineeId: GetMusclesByTraineeId = (database) => async (traineeId) => {
   const data = await database
     .select({ id: musclesSchema.id, name: musclesSchema.name })

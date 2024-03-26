@@ -1,3 +1,4 @@
+import { createId } from '@paralleldrive/cuid2';
 import { json } from '@remix-run/cloudflare';
 import { Form, useActionData, useLoaderData } from '@remix-run/react';
 import { parseWithValibot } from 'conform-to-valibot';
@@ -8,6 +9,7 @@ import { createExercise } from 'app/features/exercise/create-exercise';
 import { deleteExercise } from 'app/features/exercise/delete-exercise';
 import { getExercisesByTraineeId } from 'app/features/exercise/get-exercises-by-trainee-id';
 import { getExercisesWithTargetsByTraineeId } from 'app/features/exercise/get-exercises-with-targets-by-trainee-id';
+import { validateExercise } from 'app/features/exercise/schema';
 import { updateExercise } from 'app/features/exercise/update-exercise';
 import { getMusclesByTraineeId } from 'app/features/muscle/get-muscles-by-trainee-id';
 import { loader as traineeLoader } from 'app/routes/trainees.$traineeId/route';
@@ -54,43 +56,42 @@ const Page: FC = () => {
     switch (actionData.action) {
       case 'create': {
         toast({
-          title: actionData.success ? '部位を登録しました' : '部位の登録に失敗しました',
+          title: actionData.success ? '種目を登録しました' : '種目の登録に失敗しました',
           variant: actionData.success ? 'default' : 'destructive',
         });
         break;
       }
       case 'update': {
         toast ({
-          title: actionData.success ? '部位を更新しました' : '部位の更新に失敗しました',
+          title: actionData.success ? '種目を更新しました' : '種目の更新に失敗しました',
           variant: actionData.success ? 'default' : 'destructive',
         });
         break;
       }
       case 'delete': {
         toast({
-          title: actionData.success ? '部位を削除しました' : '部位の削除に失敗しました',
+          title: actionData.success ? '種目を削除しました' : '種目の削除に失敗しました',
           variant: actionData.success ? 'default' : 'destructive',
         });
-        toast({ title: '部位を削除しました' });
         break;
       }
     }
   }, [actionData, exercisesWithTargets, toast]);
 
-  const exercises = exercisesWithTargets.map(data => data.exercise);
+  const exercises = exercisesWithTargets;
 
   return (
     <Main>
       <Section>
         <ul className="flex flex-col gap-4">
-          {exercisesWithTargets.map(({ exercise, targets }) => {
+          {exercisesWithTargets.map((exercise) => {
             return (
               <li key={exercise.id}>
                 <Card>
                   <CardHeader className="flex w-full space-x-2">
                     <div className="grow">
                       <Heading level={2}>{exercise.name}</Heading>
-                      <CardDescription>{targets.map(target => target.name).join('、')}</CardDescription>
+                      <CardDescription>{exercise.targets.map(target => target.name).join('、')}</CardDescription>
                     </div>
                     <div className="flex-none">
                       <Dialog>
@@ -125,7 +126,10 @@ const Page: FC = () => {
                             <ExerciseForm
                               registeredMuscles={muscles}
                               registeredExercises={exercises}
-                              defaultValues={{ id: exercise.id, name: exercise.name, targets: targets.map(target => target.id) }}
+                              defaultValues={{
+                                id: exercise.id,
+                                name: exercise.name,
+                                targets: exercise.targets.map(target => target.id) }}
                               actionType="update"
                             />
                           </DialogContent>
@@ -201,41 +205,58 @@ export const action = async ({
         return json({
           action: 'create',
           success: false,
+          description: 'form validation failed',
           submission: submission.reply(),
         });
       }
 
-      const createResult = await createExercise(database)({
+      const exercise = validateExercise({
+        id: createId(),
         name: submission.value.name,
-        muscleIds: submission.value.targets,
-        traineeId: trainee.id,
+        // TODO: 二重ループなくせる？
+        targets: submission.value.targets.flatMap(target => {
+          const muscle = registeredMuscles.find(muscle => muscle.id === target);
+          return muscle ? [{ id: muscle.id, name: muscle.name }] : [];
+        }),
       });
+      if (!exercise) {
+        return json({
+          action: 'create',
+          success: false,
+          description: 'domain validation failed',
+        });
+      }
+
+      const createResult = await createExercise(database)({ exercise, traineeId: trainee.id });
       if (createResult.result === 'failure') {
         return json({
           action: 'create',
           success: false,
+          description: 'create data failed',
         });
       }
 
       return json({
         action: 'create',
         success: true,
+        description: 'success',
         submission: submission.reply(),
       });
     }
     case 'update': {
-      const [registeredMuscles, registeredExercises] = await Promise.all([
-        getMusclesByTraineeId(database)(trainee.id),
-        getExercisesByTraineeId(database)(trainee.id),
-      ]);
-
       const exerciseId = formData.get('id')?.toString();
       if (!exerciseId) {
         return json({
           action: 'update',
           success: false,
+          description: 'get formData "id" failed',
         });
       }
+
+      const [registeredMuscles, registeredExercises] = await Promise.all([
+        getMusclesByTraineeId(database)(trainee.id),
+        getExercisesByTraineeId(database)(trainee.id),
+      ]);
 
       const beforeName = registeredExercises.find(exercise => exercise.id === exerciseId)?.name ?? null;
       const submission = parseWithValibot(formData, {
@@ -245,25 +266,41 @@ export const action = async ({
         return json({
           action: 'update',
           success: false,
+          description: 'form validation failed',
           submission: submission.reply(),
         });
       }
 
-      const updateResult = await updateExercise(database)({
+      const exercise = validateExercise({
         id: exerciseId,
         name: submission.value.name,
-        targets: submission.value.targets,
+        // TODO: 二重ループなくせる？
+        targets: submission.value.targets.flatMap(target => {
+          const muscle = registeredMuscles.find(muscle => muscle.id === target);
+          return muscle ? [{ id: muscle.id, name: muscle.name }] : [];
+        }),
       });
+      if (!exercise) {
+        return json({
+          action: 'create',
+          success: false,
+          description: 'domain validation failed',
+        });
+      }
+
+      const updateResult = await updateExercise(database)(exercise);
       if (updateResult.result === 'failure') {
         return json({
           action: 'update',
           success: false,
+          description: 'update data failed',
         });
       }
 
       return json({
         action: 'update',
         success: true,
+        description: 'success',
         submission: submission.reply(),
       });
     }
@@ -273,6 +310,7 @@ export const action = async ({
         return json({
           action: 'delete',
           success: false,
+          description: 'get formData "id" failed',
         });
       }
 
@@ -281,12 +319,14 @@ export const action = async ({
         return json({
           action: 'delete',
           success: false,
+          description: 'delete data failed',
         });
       }
 
       return json({
         action: 'delete',
         success: true,
+        description: 'success',
       });
     }
     default: {

@@ -4,7 +4,7 @@ import { parseWithValibot } from 'conform-to-valibot';
 import { format } from 'date-fns';
 import { History, X } from 'lucide-react';
 import { useCallback } from 'react';
-import { array, boolean, custom, date, maxLength, maxValue, minLength, minValue, nonOptional, number, object, optional, string } from 'valibot';
+import { array, custom, date, maxLength, maxValue, minLength, minValue, nonOptional, number, object, optional, string } from 'valibot';
 
 import { Badge } from 'app/ui/badge';
 import { Button } from 'app/ui/button';
@@ -20,7 +20,6 @@ import { Slider } from 'app/ui/slider';
 import { Textarea } from 'app/ui/textarea';
 
 import type { FieldMetadata, FormMetadata } from '@conform-to/react';
-import type { Exercise } from 'app/features/exercise/schema';
 import type { FC , ComponentProps } from 'react';
 import type { Input as Infer } from 'valibot';
 
@@ -32,7 +31,7 @@ const getSessionSchema = (registeredExercises: Exercise[]) => object({
   exerciseId: nonOptional(string([
     custom(value => registeredExercises.some(exercise => exercise.id === value)),
   ]), '種目を選択してください'),
-  memo: optional(string([maxLength(100, 'メモは100文字以内で入力してください')])),
+  memo: optional(string([maxLength(100, 'メモは100文字以内で入力してください')]), ''),
   sets: array(setSchema, [minLength(1, 'セットの情報を入力してください')]),
 });
 const setSchema = object({
@@ -49,8 +48,6 @@ const setSchema = object({
       minValue(0, '1以上の数値で入力してください'),
       maxValue(10, '10以下の数値で入力してください'),
     ]), 0),
-  sameWeight: optional(boolean()),
-  sameReps: optional(boolean()),
 });
 
 type TrainingFormType = Infer<ReturnType<typeof getTrainingFormSchema>>;
@@ -63,7 +60,7 @@ type Props = {
   defaultValues?: {
     date: string;
     sessions: {
-      exerciseId: Exercise['id'];
+      exerciseId: string;
       memo: string;
       sets: {
         weight: string;
@@ -73,6 +70,7 @@ type Props = {
     }[];
   };
 };
+type Exercise = { id: string; name: string };
 export const TrainingForm: FC<Props> = ({ registeredExercises, actionType, defaultValues }) => {
   const [form, fields] = useForm<TrainingFormType>({
     shouldValidate: 'onBlur',

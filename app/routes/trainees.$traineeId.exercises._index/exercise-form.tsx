@@ -9,8 +9,6 @@ import { FormErrorMessage } from 'app/ui/form-error-message';
 import { Input } from 'app/ui/input';
 import { Label } from 'app/ui/label';
 
-import type { Exercise } from 'app/features/exercise/schema';
-import type { Muscle } from 'app/features/muscle/schema';
 import type { FC } from 'react';
 
 export const getExerciseFormSchema = (
@@ -33,15 +31,17 @@ export const getExerciseFormSchema = (
     [minLength(1, '対象の部位を選択してください')]),
   actionType: string(),
 });
+type Exercise = { id: string; name: string };
+type Muscle = { id: string; name: string };
 
 type Props = {
   registeredMuscles: Muscle[];
   registeredExercises: Exercise[];
   actionType: string;
   defaultValues?: {
-    id: Exercise['id'];
-    name: Exercise['name'];
-    targets: Muscle['id'][];
+    id: string;
+    name: string;
+    targets: string[];
   };
 };
 export const ExerciseForm: FC<Props> = ({ registeredMuscles, registeredExercises, actionType, defaultValues }) => {

@@ -9,7 +9,6 @@ import { FormErrorMessage } from 'app/ui/form-error-message';
 import { Input } from 'app/ui/input';
 import { Label } from 'app/ui/label';
 
-import type { Muscle } from '../../features/muscle/schema';
 import type { FC } from 'react';
 
 export const getMuscleFormSchema = (
@@ -30,10 +29,11 @@ type Props = {
   registeredMuscles: Muscle[];
   actionType: string;
   defaultValues?: {
-    id: Muscle['id'];
-    name: Muscle['name'];
+    id: string;
+    name: string;
   };
 };
+type Muscle = { id: string; name: string };
 export const MuscleForm: FC<Props> = ({ registeredMuscles, actionType, defaultValues }) => {
   const beforeName = defaultValues?.name ?? null;
   const [form, fields] = useForm({
