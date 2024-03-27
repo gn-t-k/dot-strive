@@ -2,22 +2,12 @@ import { eq } from 'drizzle-orm';
 
 import { muscles as musclesSchema } from 'database/tables/muscles';
 
-import { validateMuscle } from './schema';
-
 import type { Muscle } from './schema';
 import type { Database } from 'database/get-instance';
 
-type UpdateMuscle = (database: Database) => (props: {
-  id: Muscle['id'];
-  name: Muscle['name'];
-}) => Promise<
-| {
-  result: 'success';
-  data: Muscle;
-}
-| {
-  result: 'failure';
-}
+type UpdateMuscle = (database: Database) => (props: Muscle) => Promise<
+| { result: 'success'; data: { id: string; name: string } }
+| { result: 'failure' }
 >;
 export const updateMuscle: UpdateMuscle = (database) => async ({ id, name }) => {
   try {
@@ -29,9 +19,10 @@ export const updateMuscle: UpdateMuscle = (database) => async ({ id, name }) => 
       })
       .where(eq(musclesSchema.id, id))
       .returning({ id: musclesSchema.id, name: musclesSchema.name });
-    const muscle = validateMuscle(data[0]);
 
-    return muscle ? { result: 'success', data: muscle } : { result: 'failure' };
+    const updated = data[0];
+
+    return updated ? { result: 'success', data: updated } : { result: 'failure' };
   } catch (error) {
     console.log({ error });
     return { result: 'failure' };

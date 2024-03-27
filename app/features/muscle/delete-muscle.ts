@@ -3,13 +3,10 @@ import { eq } from 'drizzle-orm';
 import { muscleExerciseMappings as muscleExerciseMappingsSchema } from 'database/tables/muscle-exercise-mappings';
 import { muscles as musclesSchema } from 'database/tables/muscles';
 
-import { validateMuscle } from './schema';
-
-import type { Muscle } from './schema';
 import type { Database } from 'database/get-instance';
 
-type DeleteMuscle = (database: Database) => (props: { id: Muscle['id'] }) => Promise<
-| { result: 'success'; data: Muscle }
+type DeleteMuscle = (database: Database) => (props: { id: string }) => Promise<
+| { result: 'success'; data: { id: string; name: string } }
 | { result: 'failure' }
 >;
 export const deleteMuscle: DeleteMuscle = (database) => async ({ id }) => {
@@ -24,9 +21,9 @@ export const deleteMuscle: DeleteMuscle = (database) => async ({ id }) => {
         .returning({ id: musclesSchema.id, name: musclesSchema.name }),
     ]);
 
-    const muscle = validateMuscle(data[0]);
+    const deleted = data[0];
 
-    return muscle ? { result: 'success', data: muscle } : { result: 'failure' };
+    return deleted ? { result: 'success', data: deleted } : { result: 'failure' };
   } catch (error) {
     console.log({ error });
     return { result: 'failure' };

@@ -15,7 +15,7 @@
     "production:migrations:apply": "NO_D1_WARNING=true wrangler d1 migrations apply dot-strive"
   },
   "dependencies": {
-    "@conform-to/react": "1.0.5",
+    "@conform-to/react": "1.0.6",
     "@paralleldrive/cuid2": "2.2.2",
     "@radix-ui/react-alert-dialog": "1.0.5",
     "@radix-ui/react-avatar": "1.0.4",
@@ -35,7 +35,7 @@
     "@remix-run/react": "2.8.1",
     "class-variance-authority": "0.7.0",
     "clsx": "2.1.0",
-    "conform-to-valibot": "1.5.1",
+    "conform-to-valibot": "1.6.0",
     "drizzle-orm": "0.30.4",
     "isbot": "5.1.2",
     "lucide-react": "0.363.0",
@@ -54,10 +54,10 @@
     "@cloudflare/workers-types": "4.20240320.1",
     "@remix-run/dev": "2.8.1",
     "@remix-run/eslint-config": "2.8.1",
-    "@tsconfig/strictest": "2.0.3",
-    "@types/react": "18.2.69",
+    "@tsconfig/strictest": "2.0.4",
+    "@types/react": "18.2.72",
     "@types/react-dom": "18.2.22",
-    "@typescript-eslint/eslint-plugin": "7.3.1",
+    "@typescript-eslint/eslint-plugin": "7.4.0",
     "autoprefixer": "10.4.19",
     "better-sqlite3": "9.4.3",
     "drizzle-kit": "0.20.14",
@@ -70,12 +70,12 @@
     "eslint-plugin-testing-library": "6.2.0",
     "eslint-plugin-unicorn": "51.0.1",
     "eslint-plugin-unused-imports": "3.1.0",
-    "markuplint": "4.3.0",
+    "markuplint": "4.4.0",
     "tailwindcss": "3.4.1",
     "typescript": "5.4.3",
-    "wrangler": "3.37.0"
+    "wrangler": "3.38.0"
   },
   "engines": {
-    "node": "20.11.1"
+    "node": "20.12.0"
   }
 }
