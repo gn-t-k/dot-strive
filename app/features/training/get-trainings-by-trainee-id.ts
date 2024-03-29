@@ -1,4 +1,4 @@
-import { eq, sql } from 'drizzle-orm';
+import { asc, desc, eq, sql } from 'drizzle-orm';
 import { array, date, merge, number, object, safeParse, string } from 'valibot';
 
 import { exercises } from 'database/tables/exercises';
@@ -15,6 +15,14 @@ const exerciseSchema = object({
   id: string(),
   name: string(),
 });
+const trainingSchema = object({
+  id: string(),
+  date: date(),
+});
+const sessionSchema = object({
+  id: string(),
+  memo: string(),
+});
 const setSchema = object({
   id: string(),
   weight: number(),
@@ -22,19 +30,9 @@ const setSchema = object({
   rpe: number(),
   estimatedMaximumWeight: number(),
 });
-const sessionSchema = object({
-  id: string(),
-  memo: string(),
-});
-const trainingSchema = object({
-  id: string(),
-  date: date(),
-});
 const payloadSchema = array(merge([
   trainingSchema,
   object({
-    id: string(),
-    date: date(),
     sessions: array(merge([
       sessionSchema,
       object({
@@ -65,7 +63,8 @@ export const getTrainingsByTraineeId: GetTrainingsByTraineeId = (database) => as
     .leftJoin(trainingRecords, eq(trainings.id, trainingRecords.trainingId))
     .leftJoin(trainingSets, eq(trainingRecords.id, trainingSets.recordId))
     .leftJoin(exercises, eq(trainingRecords.exerciseId, exercises.id))
-    .where(eq(trainings.traineeId, traineeId));
+    .where(eq(trainings.traineeId, traineeId))
+    .orderBy(desc(trainings.date), asc(trainingRecords.order), asc(trainingSets.order));
 
   return data.reduce<Payload>((accumulator, current) => {
     const [parseTrainingResult, parseSessionResult, parseExerciseResult, parseSetResult] = [

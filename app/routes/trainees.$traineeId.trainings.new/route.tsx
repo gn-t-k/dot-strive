@@ -10,6 +10,7 @@ import { validateExercise } from 'app/features/exercise/schema';
 import { createTraining } from 'app/features/training/create-training';
 import { validateTraining } from 'app/features/training/schema';
 import { loader as traineeLoader } from 'app/routes/trainees.$traineeId/route';
+import { useToast } from 'app/ui/use-toast';
 import { getInstance } from 'database/get-instance';
 
 import { TrainingForm, getTrainingFormSchema } from './training-form';
@@ -32,10 +33,21 @@ export const loader = async ({
 const Page: FC = () => {
   const { registeredExercises } = useLoaderData<typeof loader>();
   const actionData = useActionData<typeof action>();
+  const { toast } = useToast();
 
   useEffect(() => {
-    console.log({ actionData });
-  }, [actionData]);
+    if (!actionData) {
+      return;
+    }
+    switch (actionData.action) {
+      case 'create': {
+        toast({
+          title: actionData.success ? 'トレーニングを登録しました' : 'トレーニングの登録に失敗しました',
+          variant: actionData.success ? 'default' : 'destructive',
+        });
+      }
+    }
+  }, [actionData, toast]);
 
   return (
     <TrainingForm
