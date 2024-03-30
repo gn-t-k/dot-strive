@@ -3,7 +3,7 @@ import { Form } from '@remix-run/react';
 import { parseWithValibot } from 'conform-to-valibot';
 import { format } from 'date-fns';
 import { X } from 'lucide-react';
-import { useCallback } from 'react';
+import { useCallback, useEffect, useState } from 'react';
 import { array, custom, date, maxLength, maxValue, minLength, minValue, nonOptional, number, object, optional, string } from 'valibot';
 
 import { Button } from 'app/ui/button';
@@ -119,12 +119,14 @@ type DateFieldProps = {
 };
 const DateField: FC<DateFieldProps> = ({ dateField }) => {
   const { value, change } = useInputControl(dateField);
+  const [isClient, setIsClient] = useState(false);
+  useEffect(() => setIsClient(true), []);
 
   return (
     <div className="flex flex-col gap-2">
       <Label htmlFor={dateField.id}>日付</Label>
       <DatePicker
-        date={value ? new Date(value) : undefined}
+        date={(value && isClient) ? new Date(value) : undefined}
         setDate={(date) => change(date ? format(date, 'yyyy-MM-dd') : undefined)}
       />
       {dateField.errors?.map(error => (
