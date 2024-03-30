@@ -1,6 +1,6 @@
 import { createId } from '@paralleldrive/cuid2';
 import { json } from '@remix-run/cloudflare';
-import { useActionData, useLoaderData } from '@remix-run/react';
+import { useActionData, useLoaderData, useNavigate } from '@remix-run/react';
 import { parseWithValibot } from 'conform-to-valibot';
 import { useEffect } from 'react';
 
@@ -10,6 +10,7 @@ import { validateExercise } from 'app/features/exercise/schema';
 import { createTraining } from 'app/features/training/create-training';
 import { validateTraining } from 'app/features/training/schema';
 import { loader as traineeLoader } from 'app/routes/trainees.$traineeId/route';
+import { useToast } from 'app/ui/use-toast';
 import { getInstance } from 'database/get-instance';
 
 import { TrainingForm, getTrainingFormSchema } from './training-form';
@@ -26,16 +27,30 @@ export const loader = async ({
   const database = getInstance(context);
   const registeredExercises = await getExercisesByTraineeId(database)(trainee.id);
 
-  return json({ registeredExercises });
+  return json({ trainee, registeredExercises });
 };
 
 const Page: FC = () => {
-  const { registeredExercises } = useLoaderData<typeof loader>();
+  const { trainee, registeredExercises } = useLoaderData<typeof loader>();
   const actionData = useActionData<typeof action>();
+  const { toast } = useToast();
+  const navigate = useNavigate();
 
   useEffect(() => {
-    console.log({ actionData });
-  }, [actionData]);
+    if (!actionData) {
+      return;
+    }
+    switch (actionData.action) {
+      case 'create': {
+        if (actionData.success) {
+          toast({ title: 'トレーニングを登録しました' });
+          navigate(`/trainees/${trainee.id}/trainings`);
+        } else {
+          toast({ title: 'トレーニングの登録に失敗しました', variant: 'destructive' });
+        }
+      }
+    }
+  }, [actionData, navigate, toast, trainee.id]);
 
   return (
     <TrainingForm
@@ -57,65 +72,56 @@ export const action = async ({
     request.formData(),
   ]);
 
-  switch (formData.get('actionType')) {
-    case 'create': {
-      const registeredExercises = await getExercisesWithTargetsByTraineeId(database)(trainee.id);
-      const submission = parseWithValibot(formData, {
-        schema: getTrainingFormSchema(registeredExercises),
-      });
-      if (submission.status !== 'success') {
-        return json({
-          action: 'create',
-          success: false,
-          description: 'form validation failed',
-          submission: submission.reply(),
-        });
-      }
-
-      const training = validateTraining({
-        id: createId(),
-        date: submission.value.date,
-        sessions: submission.value.sessions.flatMap(session => {
-          const exercise = validateExercise(registeredExercises.find((registeredExercise => registeredExercise.id === session.exerciseId)));
-          if (!exercise) {
-            return [];
-          }
-
-          return [{
-            exercise,
-            memo: session.memo,
-            sets: session.sets,
-          }];
-        }),
-      });
-      if (!training) {
-        return json({
-          action: 'create',
-          success: false,
-          description: 'domain validation failed',
-        });
-      }
-
-      const createResult = await createTraining(database)({ training, traineeId: trainee.id });
-      if (createResult.result === 'failure') {
-        return json({
-          action: 'create',
-          success: false,
-          description: 'create data failed',
-        });
-      }
-
-      return json({
-        action: 'create',
-        success: true,
-        description: 'success',
-        submission: submission.reply(),
-      });
-    }
-    case 'update':
-    case 'delete':
-    default: {
-      throw new Response('Bad Request', { status: 400 });
-    }
+  const registeredExercises = await getExercisesWithTargetsByTraineeId(database)(trainee.id);
+  const submission = parseWithValibot(formData, {
+    schema: getTrainingFormSchema(registeredExercises),
+  });
+  if (submission.status !== 'success') {
+    return json({
+      action: 'create',
+      success: false,
+      description: 'form validation failed',
+      submission: submission.reply(),
+    });
   }
+
+  const training = validateTraining({
+    id: createId(),
+    date: submission.value.date,
+    sessions: submission.value.sessions.flatMap(session => {
+      const exercise = validateExercise(registeredExercises.find((registeredExercise => registeredExercise.id === session.exerciseId)));
+      if (!exercise) {
+        return [];
+      }
+
+      return [{
+        exercise,
+        memo: session.memo,
+        sets: session.sets,
+      }];
+    }),
+  });
+  if (!training) {
+    return json({
+      action: 'create',
+      success: false,
+      description: 'domain validation failed',
+    });
+  }
+
+  const createResult = await createTraining(database)({ training, traineeId: trainee.id });
+  if (createResult.result === 'failure') {
+    return json({
+      action: 'create',
+      success: false,
+      description: 'create data failed',
+    });
+  }
+
+  return json({
+    action: 'create',
+    success: true,
+    description: 'success',
+    submission: submission.reply(),
+  });
 };
