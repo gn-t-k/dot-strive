@@ -238,7 +238,7 @@ const ExerciseField: FC<ExerciseFieldProps> = ({ registeredExercises, exerciseFi
   return (
     <div className="flex flex-col gap-2">
       <Label htmlFor={exerciseField.id}>種目</Label>
-      <Select {...getSelectProps(exerciseField)} defaultValue="test">
+      <Select {...getSelectProps(exerciseField)} defaultValue="">
         <SelectTrigger id={exerciseField.id}>
           <SelectValue placeholder="種目を選択する" />
         </SelectTrigger>
