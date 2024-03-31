@@ -46,7 +46,7 @@ const Page: FC = () => {
           toast({ title: 'トレーニングを登録しました' });
           navigate(`/trainees/${trainee.id}/trainings`);
         } else {
-          toast({ title: 'トレーニングの登録に失敗しました', variant: 'destructive' });
+          toast({ title: 'トレーニングの登録に失敗しました', variant: 'destructive', description: actionData.description });
         }
       }
     }

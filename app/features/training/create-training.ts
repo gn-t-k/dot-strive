@@ -1,7 +1,7 @@
 import { createId } from '@paralleldrive/cuid2';
+import { sql } from 'drizzle-orm';
 
 import { trainingRecords } from 'database/tables/training-records';
-import { trainingSets } from 'database/tables/training-sets';
 import { trainings } from 'database/tables/trainings';
 
 import { getEstimatedMaximumWeight } from './get-estimated-maximum-weight';
@@ -34,9 +34,14 @@ export const createTraining: CreateTraining = (database) => async ({ training, t
       database
         .insert(trainingRecords)
         .values(sessions),
-      database
-        .insert(trainingSets)
-        .values(sets),
+      // D1のvariablesの数の上限が100なので、それを回避するために生で書いている
+      database.run(sql.raw(
+        `INSERT INTO "training_sets"
+          ("id", "weight", "repetition", "rpe", "order", "estimated_maximum_weight", "record_id")
+        VALUES
+          ${sets.map(set => `('${set.id}', ${set.weight}, ${set.repetition}, ${set.rpe}, ${set.order}, ${set.estimatedMaximumWeight}, '${set.recordId}')`).join(',')}
+        ;`,
+      )),
     ]);
 
     const created = data[0];
