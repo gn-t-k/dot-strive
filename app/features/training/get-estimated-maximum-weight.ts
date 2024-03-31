@@ -15,11 +15,16 @@ export const getEstimatedMaximumWeight: GetEstimatedMaximumWeight = (set) => {
   ] as const;
   if (1 <= repetition && repetition <= 12) {
     const coefficient = coefficients[repetition - 1] ?? 1;
-    return Math.round(weight / coefficient);
+    return quantizeToQuarter(weight / coefficient);
   }
 
   // 13回以上の場合
-  return Math.round(
+  return quantizeToQuarter(
     (100 * weight) / (48.8 + 53.8 * Math.pow(Math.E, -0.075 * repetition)),
   );
+};
+
+type QuantizeToQuarter = (value: number) => number;
+const quantizeToQuarter: QuantizeToQuarter = (value) => {
+  return Math.round(value / 0.25) * 0.25;
 };
