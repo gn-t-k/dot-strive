@@ -51,7 +51,7 @@
     "valibot": "0.27.0"
   },
   "devDependencies": {
-    "@cloudflare/workers-types": "4.20240402.0",
+    "@cloudflare/workers-types": "4.20240403.0",
     "@remix-run/dev": "2.8.1",
     "@remix-run/eslint-config": "2.8.1",
     "@tsconfig/strictest": "2.0.5",
